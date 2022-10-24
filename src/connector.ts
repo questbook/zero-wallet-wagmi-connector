@@ -68,6 +68,10 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
         provider.removeListener('chainChanged', this.onChainChanged)
         provider.removeListener('disconnect', this.onDisconnect)
 
+        if(localStorage.getItem('ZeroWalletConnected') === 'false') {
+            throw new Error("Already disconnected!");
+        }
+
         localStorage.setItem('ZeroWalletConnected', 'false');
     }
 
