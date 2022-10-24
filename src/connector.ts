@@ -1,64 +1,109 @@
-import { Signer } from 'ethers'
-import { ZeroWalletConnectorOptions, ZeroWalletSigner } from './types'
-import { ZeroWalletProvider } from './provider'
+import { ethers, Signer } from 'ethers'
+import { ZeroWalletConnectorOptions } from './types'
+import { ZeroWalletProvider, ZeroWalletSigner } from './provider'
 import { Chain, Connector, ConnectorData } from 'wagmi'
 
 export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalletConnectorOptions, ZeroWalletSigner> {
-	readonly id = 'zero-wallet'
-	readonly name = 'Zero Wallet'
+    readonly id = 'zero-wallet'
+    readonly name = 'Zero Wallet'
 
-	private provider: ZeroWalletProvider
+    private signer: ZeroWalletSigner
 
-	constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
-		super(config)
-		this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl)
-	}
+    constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
+        super(config)
+        this.signer = new ZeroWalletSigner(config.options.jsonRpcProviderUrl)
+    }
 
-	get ready() {
-		return true
-	}
+    get ready() {
+        return true
+    }
 
-	async connect(): Promise<Required<ConnectorData>> {
-		throw new Error('not implemented')
-	}
+    async connect(): Promise<Required<ConnectorData>> {
 
-	async disconnect(): Promise<void> {
-		throw new Error('not implemented')
-	}
+        const provider = await this.getProvider()
+        if (!provider) throw new Error("Provider not found");
 
-	async getAccount(): Promise<string> {
-		throw new Error('not implemented')
-	}
+        if (provider.on) {
+            provider.on('accountsChanged', this.onAccountsChanged)
+            provider.on('chainChanged', this.onChainChanged)
+            provider.on('disconnect', this.onDisconnect)
+        }
 
-	async getChainId(): Promise<number> {
-		throw new Error('not implemented')
-	}
+        const privateKey = localStorage.getItem('zeroWalletPrivateKey');
 
-	async getProvider(): Promise<ZeroWalletProvider> {
-		return this.provider
-	}
+        let newZeroWallet = ethers.Wallet.createRandom();
 
-	async getSigner(): Promise<ZeroWalletSigner> {
-		throw new Error('not implemented')
-	}
+        if (!privateKey) {
+            localStorage.setItem('zeroWalletPrivateKey', newZeroWallet.privateKey);
+        }
+        else {
+            try {
+                newZeroWallet = new ethers.Wallet(privateKey);
+            }
+            catch {
+                localStorage.setItem('zeroWalletPrivateKey', newZeroWallet.privateKey);
+            }
+        }
 
-	async isAuthorized(): Promise<boolean> {
-		throw new Error('not implemented')
-	}
+        localStorage.setItem('ZeroWalletConnected', 'true');
 
-	async switchChain(chainId: number): Promise<Chain> {
-		throw new Error('not implemented')
-	}
+        const chainId = await this.getChainId();
 
-	protected onAccountsChanged(accounts: string[]) {
-		throw new Error('not implemented')
-	}
+        return {
+            account: newZeroWallet.address,
+            chain: {
+                id: chainId,
+                unsupported: false
+            },
+            provider: this.signer.getProvider(),
+        }
+    }
 
-	protected onChainChanged(chain: number | string) {
-		throw new Error('not implemented')
-	}
+    async disconnect(): Promise<void> {
 
-	protected onDisconnect(error: Error) {
-		throw new Error('not implemented')
-	}
+        const provider = await this.getProvider()
+        if (!provider?.removeListener) return
+
+        provider.removeListener('accountsChanged', this.onAccountsChanged)
+        provider.removeListener('chainChanged', this.onChainChanged)
+        provider.removeListener('disconnect', this.onDisconnect)
+
+        localStorage.setItem('ZeroWalletConnected', 'false');
+    }
+
+    async getAccount(): Promise<string> {
+        throw new Error('not implemented')
+    }
+
+    async getChainId(): Promise<number> {
+        throw new Error('not implemented')
+    }
+
+    async getProvider(): Promise<ZeroWalletProvider> {
+        return this.signer.getProvider()
+    }
+
+    async getSigner(): Promise<ZeroWalletSigner> {
+        throw new Error('not implemented')
+    }
+
+    async isAuthorized(): Promise<boolean> {
+        throw new Error('not implemented')
+    }
+
+    async switchChain(chainId: number): Promise<Chain> {
+        throw new Error('not implemented')
+    }
+
+    protected onAccountsChanged(accounts: string[]) {
+        throw new Error('not implemented')
+    }
+
+    protected onChainChanged(chain: number | string) {
+        throw new Error('not implemented')
+    }
+
+    protected onDisconnect(error: Error) {
+        throw new Error('not implemented')
+    }
 }

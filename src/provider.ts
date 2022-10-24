@@ -5,3 +5,12 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
         super(jsonRpcProviderUrl);
     }
 }
+
+export class ZeroWalletSigner {
+    constructor(jsonRpcProviderUrl: string) {
+    }
+
+    getProvider() {
+        return new ZeroWalletProvider("");
+    }
+}

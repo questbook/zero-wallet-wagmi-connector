@@ -5,4 +5,3 @@ export type ZeroWalletConnectorOptions = {
     jsonRpcProviderUrl: string
 }
 
-export type ZeroWalletSigner = ethers.providers.JsonRpcSigner
