@@ -20,6 +20,10 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async connect(): Promise<Required<ConnectorData>> {
 
+        if(localStorage.getItem('ZeroWalletConnected') === 'true') {
+            throw new Error("Already connected!");
+        }
+
         const provider = await this.getProvider()
         if (!provider) throw new Error("Provider not found");
 
@@ -61,16 +65,16 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async disconnect(): Promise<void> {
 
+        if(localStorage.getItem('ZeroWalletConnected') === 'false') {
+            throw new Error("Already disconnected!");
+        }
+
         const provider = await this.getProvider()
         if (!provider?.removeListener) return
 
         provider.removeListener('accountsChanged', this.onAccountsChanged)
         provider.removeListener('chainChanged', this.onChainChanged)
         provider.removeListener('disconnect', this.onDisconnect)
-
-        if(localStorage.getItem('ZeroWalletConnected') === 'false') {
-            throw new Error("Already disconnected!");
-        }
 
         localStorage.setItem('ZeroWalletConnected', 'false');
     }
