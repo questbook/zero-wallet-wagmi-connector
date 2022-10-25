@@ -1,6 +1,7 @@
 import { ethers, Signer } from 'ethers'
 import { ZeroWalletConnectorOptions } from './types'
-import { ZeroWalletProvider, ZeroWalletSigner } from './provider'
+import { ZeroWalletProvider } from './provider'
+import { ZeroWalletSigner } from './signer'
 import { Chain, Connector, ConnectorData } from 'wagmi'
 
 export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalletConnectorOptions, ZeroWalletSigner> {
