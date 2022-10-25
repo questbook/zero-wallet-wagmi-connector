@@ -7,11 +7,11 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     readonly id = 'zero-wallet'
     readonly name = 'Zero Wallet'
 
-    private signer: ZeroWalletSigner
+    private provider: ZeroWalletProvider
 
     constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
         super(config)
-        this.signer = new ZeroWalletSigner(config.options.jsonRpcProviderUrl)
+        this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl)
     }
 
     get ready() {
@@ -59,7 +59,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
                 id: chainId,
                 unsupported: false
             },
-            provider: this.signer.getProvider(),
+            provider: this.provider,
         }
     }
 
@@ -88,11 +88,11 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     }
 
     async getProvider(): Promise<ZeroWalletProvider> {
-        return this.signer.getProvider()
+        return this.provider
     }
 
     async getSigner(): Promise<ZeroWalletSigner> {
-        throw new Error('not implemented')
+        return this.provider.getSigner();
     }
 
     async isAuthorized(): Promise<boolean> {
