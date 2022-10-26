@@ -13,10 +13,10 @@ export class StorageFactory implements IStoreable {
         this.store = this.nameToClass[storeType]();
     }
 
-    get(key: string): Promise<string | null> {
+    get(key: string): string | null {
         return this.store.get(key);
     }
-    set(key: string, value: string): Promise<void> {
+    set(key: string, value: string): void {
         return this.store.set(key, value);
     }
 

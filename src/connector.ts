@@ -14,8 +14,8 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
         super(config)
-        this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl)
         this.store = new StorageFactory(config.options.store);
+        this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl, this.store)
     }
 
     get ready() {
@@ -24,7 +24,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async connect(): Promise<Required<ConnectorData>> {
 
-        if((await this.store.get('ZeroWalletConnected')) === 'true') {
+        if( this.store.get('ZeroWalletConnected') === 'true') {
             throw new Error("Already connected!");
         }
 
@@ -37,23 +37,23 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
             provider.on('disconnect', this.onDisconnect)
         }
 
-        const privateKey = await this.store.get('zeroWalletPrivateKey');
+        const privateKey = this.store.get('zeroWalletPrivateKey');
 
         let newZeroWallet = ethers.Wallet.createRandom();
 
         if (!privateKey) {
-            await this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
+            this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
         }
         else {
             try {
                 newZeroWallet = new ethers.Wallet(privateKey);
             }
             catch {
-                await this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
+                this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
             }
         }
 
-        await this.store.set('ZeroWalletConnected', 'true');
+        this.store.set('ZeroWalletConnected', 'true');
 
         const chainId = await this.getChainId();
 
@@ -69,7 +69,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async disconnect(): Promise<void> {
 
-        if((await this.store.get('ZeroWalletConnected')) === 'false') {
+        if(this.store.get('ZeroWalletConnected') === 'false') {
             throw new Error("Already disconnected!");
         }
 
@@ -80,7 +80,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
         provider.removeListener('chainChanged', this.onChainChanged)
         provider.removeListener('disconnect', this.onDisconnect)
 
-        await this.store.set('ZeroWalletConnected', 'false');
+        this.store.set('ZeroWalletConnected', 'false');
     }
 
     async getAccount(): Promise<string> {
@@ -96,7 +96,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     }
 
     async getSigner(): Promise<ZeroWalletSigner> {
-        return this.provider.getSigner();
+        return this.provider.getSigner('broswer');
     }
 
     async isAuthorized(): Promise<boolean> {
