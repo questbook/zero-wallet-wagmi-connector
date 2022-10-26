@@ -3,16 +3,19 @@ import { ZeroWalletConnectorOptions } from './types'
 import { ZeroWalletProvider } from './provider'
 import { ZeroWalletSigner } from './signer'
 import { Chain, Connector, ConnectorData } from 'wagmi'
+import { StorageFactory } from 'store/storageFactory'
 
 export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalletConnectorOptions, ZeroWalletSigner> {
     readonly id = 'zero-wallet'
     readonly name = 'Zero Wallet'
 
     private provider: ZeroWalletProvider
+    private store: StorageFactory
 
     constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
         super(config)
         this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl)
+        this.store = new StorageFactory(config.options.store);
     }
 
     get ready() {
@@ -21,7 +24,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async connect(): Promise<Required<ConnectorData>> {
 
-        if(localStorage.getItem('ZeroWalletConnected') === 'true') {
+        if((await this.store.get('ZeroWalletConnected')) === 'true') {
             throw new Error("Already connected!");
         }
 
@@ -34,23 +37,23 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
             provider.on('disconnect', this.onDisconnect)
         }
 
-        const privateKey = localStorage.getItem('zeroWalletPrivateKey');
+        const privateKey = await this.store.get('zeroWalletPrivateKey');
 
         let newZeroWallet = ethers.Wallet.createRandom();
 
         if (!privateKey) {
-            localStorage.setItem('zeroWalletPrivateKey', newZeroWallet.privateKey);
+            await this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
         }
         else {
             try {
                 newZeroWallet = new ethers.Wallet(privateKey);
             }
             catch {
-                localStorage.setItem('zeroWalletPrivateKey', newZeroWallet.privateKey);
+                await this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
             }
         }
 
-        localStorage.setItem('ZeroWalletConnected', 'true');
+        await this.store.set('ZeroWalletConnected', 'true');
 
         const chainId = await this.getChainId();
 
@@ -66,7 +69,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async disconnect(): Promise<void> {
 
-        if(localStorage.getItem('ZeroWalletConnected') === 'false') {
+        if((await this.store.get('ZeroWalletConnected')) === 'false') {
             throw new Error("Already disconnected!");
         }
 
@@ -77,7 +80,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
         provider.removeListener('chainChanged', this.onChainChanged)
         provider.removeListener('disconnect', this.onDisconnect)
 
-        localStorage.setItem('ZeroWalletConnected', 'false');
+        await this.store.set('ZeroWalletConnected', 'false');
     }
 
     async getAccount(): Promise<string> {
