@@ -2,7 +2,7 @@ import { defineReadOnly } from "@ethersproject/properties";
 import { ethers } from "ethers";
 import { ZeroWalletProvider } from "./provider";
 import { Logger } from "@ethersproject/logger";
-import { StorageFactory } from "store/storageFactory";
+import { IStoreable } from "store/IStoreable";
 
 const version = "providers/5.7.2";
 const logger = new Logger(version);
@@ -10,14 +10,14 @@ const _constructorGuard = {};
 
 export class ZeroWalletSigner extends ethers.providers.JsonRpcSigner {
 
-    store: StorageFactory;
+    private store: IStoreable;
     zeroWallet?: ethers.Wallet;
 
-    constructor(constructorGuard: any, provider: ZeroWalletProvider, addressOrIndex?: string | number) {
+    constructor(constructorGuard: any, provider: ZeroWalletProvider, store: IStoreable, addressOrIndex?: string | number) {
         
         super(constructorGuard, provider, addressOrIndex);
         
-        this.store = provider.store;
+        this.store = store;
 
         const zeroWalletPrivateKey = this.store.get('zeroWalletPrivateKey');
 

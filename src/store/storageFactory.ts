@@ -1,23 +1,16 @@
 import { IStoreable } from "./IStoreable";
 import { BrowserStorage } from "./browserStorage";
+import { NameToClassValue } from "types";
 
-export class StorageFactory implements IStoreable {
+export abstract class StorageFactory {
 
-    nameToClass = {
+    private static nameToClass: Record<string, any> = 
+    {
         'browser': BrowserStorage
-    } as {[key: string]: any}
-
-    private store: IStoreable;
-
-    constructor(storeType: string) {
-        this.store = this.nameToClass[storeType]();
     }
 
-    get(key: string): string | null {
-        return this.store.get(key);
-    }
-    set(key: string, value: string): void {
-        return this.store.set(key, value);
+    static create(storeType: string): IStoreable {
+        return new StorageFactory.nameToClass[storeType]();
     }
 
 }

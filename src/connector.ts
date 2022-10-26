@@ -4,17 +4,18 @@ import { ZeroWalletProvider } from './provider'
 import { ZeroWalletSigner } from './signer'
 import { Chain, Connector, ConnectorData } from 'wagmi'
 import { StorageFactory } from 'store/storageFactory'
+import { IStoreable } from 'store/IStoreable'
 
 export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalletConnectorOptions, ZeroWalletSigner> {
     readonly id = 'zero-wallet'
     readonly name = 'Zero Wallet'
 
     private provider: ZeroWalletProvider
-    private store: StorageFactory
+    private store: IStoreable
 
     constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
         super(config)
-        this.store = new StorageFactory(config.options.store);
+        this.store = StorageFactory.create(config.options.store);
         this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl, this.store)
     }
 
