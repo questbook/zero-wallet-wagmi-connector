@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { ZeroWalletProvider } from "./provider";
 import { Logger } from "@ethersproject/logger";
 import { IStoreable } from "store/IStoreable";
+import { RecoveryMechanism } from 'recovery'
 
 const version = "providers/5.7.2";
 const logger = new Logger(version);
@@ -12,8 +13,9 @@ export class ZeroWalletSigner extends ethers.providers.JsonRpcSigner {
 
     private store: IStoreable;
     zeroWallet?: ethers.Wallet;
+    recoveryMechansim: RecoveryMechanism | undefined
 
-    constructor(constructorGuard: any, provider: ZeroWalletProvider, store: IStoreable, addressOrIndex?: string | number) {
+    constructor(constructorGuard: any, provider: ZeroWalletProvider, store: IStoreable, addressOrIndex?: string | number, recoveryMechansim?: RecoveryMechanism) {
         
         super(constructorGuard, provider, addressOrIndex);
         
@@ -28,6 +30,7 @@ export class ZeroWalletSigner extends ethers.providers.JsonRpcSigner {
             this.zeroWallet = new ethers.Wallet(zeroWalletPrivateKey);
         }
 
+        this.recoveryMechansim = recoveryMechansim
     }
 
     getProvider() {
