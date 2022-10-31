@@ -10,11 +10,14 @@ const ZERO_WALLET_FOLDER_NAME = ".zero-wallet";
 const ZERO_WALLET_FILE_NAME = "key";
 
 export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
-  private store: IStoreable;
-  constructor(jsonRpcProviderUrl: string, store: IStoreable) {
-    super(jsonRpcProviderUrl);
-    this.store = store;
-  }
+
+    private store: IStoreable;
+    zeroWalletNetwork: ethers.providers.Network;
+    constructor(jsonRpcProviderUrl: string, network: ethers.providers.Network, store: IStoreable) {
+        super(jsonRpcProviderUrl);
+        this.store = store;
+        this.zeroWalletNetwork = network;
+    }
 
   getSigner(addressOrIndex?: string | number): ZeroWalletSigner {
     const googleRecoveryMechanismOptions: GoogleRecoveryMechanismOptions = {
@@ -34,4 +37,8 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
       googleRecoveryWeb
     );
   }
+
+    async getNetwork(): Promise<ethers.providers.Network> {
+        return this.zeroWalletNetwork;
+    }
 }
