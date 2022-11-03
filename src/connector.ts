@@ -16,6 +16,11 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
         super(config)
         this.store = StorageFactory.create(config.options.store);
+        const _chain = 
+            (config?.chains && config.chains.length > 0) ? 
+            { chainId: config.chains[0].id, name: config.chains[0].name } :
+            { chainId: 1, name: 'Ethereum' }
+
         this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl, this.store)
     }
 
