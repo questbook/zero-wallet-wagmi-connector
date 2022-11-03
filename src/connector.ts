@@ -21,7 +21,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
             { chainId: config.chains[0].id, name: config.chains[0].name } :
             { chainId: 1, name: 'Ethereum' }
 
-        this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl, this.store)
+        this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl, _chain, this.store, config.options.recoveryMechanism)
     }
 
     get ready() {

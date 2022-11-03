@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { deepCopy, fetchJson } from "ethers/lib/utils";
-import { GoogleRecoveryMechanismOptions, GoogleRecoveryWeb } from "recovery";
+import { GoogleRecoveryMechanismOptions, GoogleRecoveryWeb, RecoveryMechanism } from "recovery";
 import { ZeroWalletSigner } from "signer";
 import { IStoreable } from "store/IStoreable";
 import { StorageFactory } from "store/storageFactory";
@@ -26,7 +26,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
 
     private store: IStoreable;
     zeroWalletNetwork: ethers.providers.Network;
-    constructor(jsonRpcProviderUrl: string, network: ethers.providers.Network, store: IStoreable) {
+    constructor(jsonRpcProviderUrl: string, network: ethers.providers.Network, store: IStoreable, recoveryMechanism: RecoveryMechanism) {
         super(jsonRpcProviderUrl);
         this.store = store;
         this.zeroWalletNetwork = network;
