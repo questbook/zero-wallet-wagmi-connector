@@ -184,7 +184,7 @@ export class ZeroWalletSigner extends ethers.providers.JsonRpcSigner {
             throw new Error("Zero Wallet is not initialized yet");
         }
 
-        //@TODO - fetch SCW Address
+        //@TODO - fetch SCW Address from the zero-wallet-server-sdk
         const scwAddress = "0x0000000000000000000000000000000000000000";
         //@TODO - call build transaction from the zero-wallet-server-sdk
         const safeTxBody = {};
@@ -270,7 +270,8 @@ export class ZeroWalletSigner extends ethers.providers.JsonRpcSigner {
         try {
             
                 const tx = await this.provider.getTransaction(hash);
-                // @TODO: check if there's an issue here ===> if (tx === null) { return undefined; }
+                // @TODO: check if there's an issue in the next line
+                // if (tx === null) { return undefined; }
                 return this.provider._wrapTransaction(tx, hash, blockNumber);
         } catch (error) {
             (<any>error).transactionHash = hash;
