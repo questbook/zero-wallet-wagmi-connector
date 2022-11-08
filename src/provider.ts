@@ -119,7 +119,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
         const network = await this.getNetwork();
         
         this.zeroWalletNetwork.chainId = chainId;
-        
+
         this.zeroWalletNetwork.name = chainsNames[chainId];
 
         return {
@@ -127,5 +127,13 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             name: this.zeroWalletNetwork.name,
             network: this.zeroWalletNetwork.name
         } as Chain
+    }
+
+    detectNetwork(): Promise<ethers.providers.Network> {
+        return this.getNetwork();
+    }
+
+    _uncachedDetectNetwork(): Promise<ethers.providers.Network> {
+        return this.getNetwork();
     }
 }
