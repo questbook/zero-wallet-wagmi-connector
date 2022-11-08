@@ -1,4 +1,4 @@
-import { chainsNames } from "constants/chains";
+import { SupportedChainId, chainsNames } from "constants/chains";
 import { ethers } from "ethers";
 import { deepCopy, fetchJson } from "ethers/lib/utils";
 import { GoogleRecoveryMechanismOptions, GoogleRecoveryWeb, RecoveryMechanism } from "recovery";
@@ -115,7 +115,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
         return result;
     }
 
-    async switchNetwork(chainId: number): Promise<Chain> {
+    async switchNetwork(chainId: SupportedChainId): Promise<Chain> {
         const network = await this.getNetwork();
         
         this.zeroWalletNetwork.chainId = chainId;

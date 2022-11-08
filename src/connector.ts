@@ -7,6 +7,7 @@ import { StorageFactory } from 'store/storageFactory'
 import { IStoreable } from 'store/IStoreable'
 import { getAddress } from 'ethers/lib/utils'
 import { normalizeChainId } from 'utils/normalizeChainId'
+import { SupportedChainId } from 'constants/chains'
 
 export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalletConnectorOptions, ZeroWalletSigner> {
     readonly id = 'zero-wallet'
@@ -125,7 +126,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
         return this.store.get('ZeroWalletConnected') === 'true' && this.store.get('zeroWalletPrivateKey') !== undefined;
     }
 
-    async switchChain(chainId: number): Promise<Chain> {
+    async switchChain(chainId: SupportedChainId): Promise<Chain> {
         return await this.provider.switchNetwork(chainId);
     }
 
