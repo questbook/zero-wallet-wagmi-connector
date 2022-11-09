@@ -5,6 +5,9 @@ import { ZeroWalletSigner } from './signer'
 import { Chain, Connector, ConnectorData } from 'wagmi'
 import { StorageFactory } from 'store/storageFactory'
 import { IStoreable } from 'store/IStoreable'
+import { getAddress } from 'ethers/lib/utils'
+import { normalizeChainId } from 'utils/normalizeChainId'
+import { SupportedChainId } from 'constants/chains'
 
 export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalletConnectorOptions, ZeroWalletSigner> {
     readonly id = 'zero-wallet'
@@ -16,21 +19,34 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     constructor(config: { chains?: Chain[]; options: ZeroWalletConnectorOptions }) {
         super(config)
         this.store = StorageFactory.create(config.options.store);
-        const _chain = 
-            (config?.chains && config.chains.length > 0) ? 
-            { chainId: config.chains[0].id, name: config.chains[0].name } :
-            { chainId: 1, name: 'Ethereum' }
+        const _chain =
+            (config?.chains && config.chains.length > 0) ?
+                { chainId: config.chains[0].id, name: config.chains[0].name } :
+                { chainId: 1, name: 'Ethereum' }
 
         this.provider = new ZeroWalletProvider(config.options.jsonRpcProviderUrl, _chain, this.store, config.options.recoveryMechanism)
     }
 
+    /**
+     * @returns boolean - true if localStorge is available, false otherwise
+     */
     get ready() {
-        return true
+        try {
+            if (localStorage) {
+                return true;
+            }
+        }
+        catch {
+            return false;
+        }
+        finally {
+            return false;
+        }
     }
 
     async connect(): Promise<Required<ConnectorData>> {
 
-        if( this.store.get('ZeroWalletConnected') === 'true') {
+        if (this.store.get('ZeroWalletConnected') === 'true') {
             throw new Error("Already connected!");
         }
 
@@ -75,7 +91,7 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
 
     async disconnect(): Promise<void> {
 
-        if(this.store.get('ZeroWalletConnected') === 'false') {
+        if (this.store.get('ZeroWalletConnected') === 'false') {
             throw new Error("Already disconnected!");
         }
 
@@ -90,11 +106,12 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     }
 
     async getAccount(): Promise<string> {
-        throw new Error('not implemented')
+        const signer = await this.getSigner();
+        return await signer.getAddress();
     }
 
     async getChainId(): Promise<number> {
-        throw new Error('not implemented')
+        return (await this.getProvider()).getNetwork().then((network) => network.chainId);
     }
 
     async getProvider(): Promise<ZeroWalletProvider> {
@@ -102,26 +119,32 @@ export class ZeroWalletConnector extends Connector<ZeroWalletProvider, ZeroWalle
     }
 
     async getSigner(): Promise<ZeroWalletSigner> {
-        return this.provider.getSigner('broswer');
+        return this.provider.getSigner('browser');
     }
 
     async isAuthorized(): Promise<boolean> {
-        throw new Error('not implemented')
+        return this.store.get('ZeroWalletConnected') === 'true' && this.store.get('zeroWalletPrivateKey') !== undefined;
     }
 
-    async switchChain(chainId: number): Promise<Chain> {
-        throw new Error('not implemented')
+    async switchChain(chainId: SupportedChainId): Promise<Chain> {
+        return await this.provider.switchNetwork(chainId);
     }
 
     protected onAccountsChanged(accounts: string[]) {
-        throw new Error('not implemented')
+        if (accounts.length === 0) this.emit('disconnect')
+        else
+            this.emit('change', {
+                account: getAddress(accounts[0] as string),
+            })
     }
 
-    protected onChainChanged(chain: number | string) {
-        throw new Error('not implemented')
+    protected onChainChanged(chainId: number | string) {
+        const id = normalizeChainId(chainId)
+        const unsupported = this.isChainUnsupported(id)
+        this.emit('change', { chain: { id, unsupported } })
     }
 
-    protected onDisconnect(error: Error) {
-        throw new Error('not implemented')
+    protected onDisconnect() {
+        this.emit('disconnect');
     }
 }
