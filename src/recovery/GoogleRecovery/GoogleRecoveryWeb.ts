@@ -141,7 +141,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
     if (!this.options.allowMultiKeys)
       keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name=\'${this.options.fileNameGD}\' and trashed = false`;
     else {
-      if (typeof keyId === 'undefined')
+      if (typeof keyId === "undefined")
         keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name contains \'${this.options.fileNameGD}\' and trashed = false`;
       else
         keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name =\'${
@@ -152,14 +152,14 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
       q: keyFileQuerySelector,
       spaces: "drive",
     });
-    let result = keyFileQueryResponse.result.files
+    let result = keyFileQueryResponse.result.files;
 
-    if (this.options.allowMultiKeys && typeof keyId === 'undefined'){
+    if (this.options.allowMultiKeys && typeof keyId === "undefined") {
       // The key file name length should be larger than fileNameGD's fileNameGD.length.
       const baseKeyFileLength = this.options.fileNameGD.length;
       result = result?.filter((file) => {
-        return _isNumber(file.name!.slice(baseKeyFileLength))
-      })
+        return _isNumber(file.name!.slice(baseKeyFileLength));
+      });
     }
     return result || [];
   }
@@ -209,38 +209,42 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
     return newZeroWalletFolder.result;
   }
 
-  async _getNewKeyFileName(keyFilesInFolder: gapi.client.drive.File[]): Promise<string> {
-    if (!this.options.allowMultiKeys){
-      return this.options.fileNameGD
+  async _getNewKeyFileName(
+    keyFilesInFolder: gapi.client.drive.File[]
+  ): Promise<string> {
+    if (!this.options.allowMultiKeys) {
+      return this.options.fileNameGD;
     }
-    let maxExistingNumber = 0
-    const baseKeyFileLength = this.options.fileNameGD.length
+    let maxExistingNumber = 0;
+    const baseKeyFileLength = this.options.fileNameGD.length;
     keyFilesInFolder.forEach((keyFile) => {
-      try{
-        const keyFileNumber = +keyFile.name!.slice(baseKeyFileLength)
-        if (keyFileNumber > maxExistingNumber){
+      try {
+        const keyFileNumber = +keyFile.name!.slice(baseKeyFileLength);
+        if (keyFileNumber > maxExistingNumber) {
           maxExistingNumber = keyFileNumber;
         }
-      }
-      catch {}
-    })
+      } catch {}
+    });
     maxExistingNumber++;
-    const formatedKeyFileName = this.options.fileNameGD + maxExistingNumber.toString()
-    return formatedKeyFileName
+    const formatedKeyFileName =
+      this.options.fileNameGD + maxExistingNumber.toString();
+    return formatedKeyFileName;
   }
 
   async _createNewKeyFile(wallet: Wallet, folderId: string): Promise<void> {
-    const keyFilesInFolder = await this._getKeyFilesFromFolder(folderId)
-    const newKeyFileName = await this._getNewKeyFileName(keyFilesInFolder)
-    
-    const existingKeyFiles = keyFilesInFolder.filter(file => file.name === newKeyFileName)
-    if (existingKeyFiles.length && this.options.handleExistingKey === 'Error'){
-      throw new Error(`${newKeyFileName} already exists`)
+    const keyFilesInFolder = await this._getKeyFilesFromFolder(folderId);
+    const newKeyFileName = await this._getNewKeyFileName(keyFilesInFolder);
+
+    const existingKeyFiles = keyFilesInFolder.filter(
+      (file) => file.name === newKeyFileName
+    );
+    if (existingKeyFiles.length && this.options.handleExistingKey === "Error") {
+      throw new Error(`${newKeyFileName} already exists`);
     }
 
-    if (this.options.handleExistingKey === 'Overwrite')
-      await this._removeFilesOrFolders(existingKeyFiles)
-    
+    if (this.options.handleExistingKey === "Overwrite")
+      await this._removeFilesOrFolders(existingKeyFiles);
+
     const keyFileMetadata: Metadata = {
       name: newKeyFileName,
       parents: [folderId],
@@ -253,7 +257,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
     let folder = await this._getFolderWithRemoval();
     if (!folder) folder = await this._createFolder();
 
-    await this._createNewKeyFile(wallet, folder.id!)
+    await this._createNewKeyFile(wallet, folder.id!);
   }
 
   recoveryReadyPromise(): Promise<void> {
