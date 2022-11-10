@@ -1,3 +1,3 @@
-export * from "./GoogleRecovery";
+export * from './GoogleRecovery';
 
-export type { RecoveryMechanism } from "./types";
+export type { RecoveryMechanism } from './types';

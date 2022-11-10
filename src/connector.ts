@@ -1,160 +1,163 @@
-import { ethers, Signer } from "ethers";
-import { ZeroWalletConnectorOptions } from "./types";
-import { ZeroWalletProvider } from "./provider";
-import { ZeroWalletSigner } from "./signer";
-import { Chain, Connector, ConnectorData } from "wagmi";
-import { StorageFactory } from "store/storageFactory";
-import { IStoreable } from "store/IStoreable";
-import { getAddress } from "ethers/lib/utils";
-import { normalizeChainId } from "utils/normalizeChainId";
-import { SupportedChainId } from "constants/chains";
+import { ethers, Signer } from 'ethers';
+import { ZeroWalletConnectorOptions } from './types';
+import { ZeroWalletProvider } from './provider';
+import { ZeroWalletSigner } from './signer';
+import { Chain, Connector, ConnectorData } from 'wagmi';
+import { StorageFactory } from 'store/storageFactory';
+import { IStoreable } from 'store/IStoreable';
+import { getAddress } from 'ethers/lib/utils';
+import { normalizeChainId } from 'utils/normalizeChainId';
+import { SupportedChainId } from 'constants/chains';
 
 export class ZeroWalletConnector extends Connector<
-  ZeroWalletProvider,
-  ZeroWalletConnectorOptions,
-  ZeroWalletSigner
+    ZeroWalletProvider,
+    ZeroWalletConnectorOptions,
+    ZeroWalletSigner
 > {
-  readonly id = "zero-wallet";
-  readonly name = "Zero Wallet";
+    readonly id = 'zero-wallet';
+    readonly name = 'Zero Wallet';
 
-  private provider: ZeroWalletProvider;
-  private store: IStoreable;
+    private provider: ZeroWalletProvider;
+    private store: IStoreable;
 
-  constructor(config: {
-    chains?: Chain[];
-    options: ZeroWalletConnectorOptions;
-  }) {
-    super(config);
-    this.store = StorageFactory.create(config.options.store);
-    const _chain =
-      config?.chains && config.chains.length > 0
-        ? { chainId: config.chains[0].id, name: config.chains[0].name }
-        : { chainId: 1, name: "Ethereum" };
+    constructor(config: {
+        chains?: Chain[];
+        options: ZeroWalletConnectorOptions;
+    }) {
+        super(config);
+        this.store = StorageFactory.create(config.options.store);
+        const _chain =
+            config?.chains && config.chains.length > 0
+                ? { chainId: config.chains[0].id, name: config.chains[0].name }
+                : { chainId: 1, name: 'Ethereum' };
 
-    this.provider = new ZeroWalletProvider(
-      config.options.jsonRpcProviderUrl,
-      _chain,
-      this.store
-    );
-  }
-
-  /**
-   * @returns boolean - true if localStorge is available, false otherwise
-   */
-  get ready() {
-    try {
-      if (localStorage) {
-        return true;
-      }
-    } catch {
-      return false;
-    } finally {
-      return false;
-    }
-  }
-
-  async connect(): Promise<Required<ConnectorData>> {
-    if (this.store.get("ZeroWalletConnected") === "true") {
-      throw new Error("Already connected!");
+        this.provider = new ZeroWalletProvider(
+            config.options.jsonRpcProviderUrl,
+            _chain,
+            this.store
+        );
     }
 
-    const provider = await this.getProvider();
-    if (!provider) throw new Error("Provider not found");
-
-    if (provider.on) {
-      provider.on("accountsChanged", this.onAccountsChanged);
-      provider.on("chainChanged", this.onChainChanged);
-      provider.on("disconnect", this.onDisconnect);
+    /**
+     * @returns boolean - true if localStorge is available, false otherwise
+     */
+    get ready() {
+        try {
+            if (localStorage) {
+                return true;
+            }
+        } catch {
+            return false;
+        } finally {
+            return false;
+        }
     }
 
-    const privateKey = this.store.get("zeroWalletPrivateKey");
+    async connect(): Promise<Required<ConnectorData>> {
+        if (this.store.get('ZeroWalletConnected') === 'true') {
+            throw new Error('Already connected!');
+        }
 
-    let newZeroWallet = ethers.Wallet.createRandom();
+        const provider = await this.getProvider();
+        if (!provider) throw new Error('Provider not found');
 
-    if (!privateKey) {
-      this.store.set("zeroWalletPrivateKey", newZeroWallet.privateKey);
-    } else {
-      try {
-        newZeroWallet = new ethers.Wallet(privateKey);
-      } catch {
-        this.store.set("zeroWalletPrivateKey", newZeroWallet.privateKey);
-      }
+        if (provider.on) {
+            provider.on('accountsChanged', this.onAccountsChanged);
+            provider.on('chainChanged', this.onChainChanged);
+            provider.on('disconnect', this.onDisconnect);
+        }
+
+        const privateKey = this.store.get('zeroWalletPrivateKey');
+
+        let newZeroWallet = ethers.Wallet.createRandom();
+
+        if (!privateKey) {
+            this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
+        } else {
+            try {
+                newZeroWallet = new ethers.Wallet(privateKey);
+            } catch {
+                this.store.set(
+                    'zeroWalletPrivateKey',
+                    newZeroWallet.privateKey
+                );
+            }
+        }
+
+        this.store.set('ZeroWalletConnected', 'true');
+
+        const chainId = await this.getChainId();
+
+        return {
+            account: newZeroWallet.address,
+            chain: {
+                id: chainId,
+                unsupported: false
+            },
+            provider: this.provider
+        };
     }
 
-    this.store.set("ZeroWalletConnected", "true");
+    async disconnect(): Promise<void> {
+        if (this.store.get('ZeroWalletConnected') === 'false') {
+            throw new Error('Already disconnected!');
+        }
 
-    const chainId = await this.getChainId();
+        const provider = await this.getProvider();
+        if (!provider?.removeListener) return;
 
-    return {
-      account: newZeroWallet.address,
-      chain: {
-        id: chainId,
-        unsupported: false,
-      },
-      provider: this.provider,
-    };
-  }
+        provider.removeListener('accountsChanged', this.onAccountsChanged);
+        provider.removeListener('chainChanged', this.onChainChanged);
+        provider.removeListener('disconnect', this.onDisconnect);
 
-  async disconnect(): Promise<void> {
-    if (this.store.get("ZeroWalletConnected") === "false") {
-      throw new Error("Already disconnected!");
+        this.store.set('ZeroWalletConnected', 'false');
     }
 
-    const provider = await this.getProvider();
-    if (!provider?.removeListener) return;
+    async getAccount(): Promise<string> {
+        const signer = await this.getSigner();
+        return await signer.getAddress();
+    }
 
-    provider.removeListener("accountsChanged", this.onAccountsChanged);
-    provider.removeListener("chainChanged", this.onChainChanged);
-    provider.removeListener("disconnect", this.onDisconnect);
+    async getChainId(): Promise<number> {
+        return (await this.getProvider())
+            .getNetwork()
+            .then((network) => network.chainId);
+    }
 
-    this.store.set("ZeroWalletConnected", "false");
-  }
+    async getProvider(): Promise<ZeroWalletProvider> {
+        return this.provider;
+    }
 
-  async getAccount(): Promise<string> {
-    const signer = await this.getSigner();
-    return await signer.getAddress();
-  }
+    async getSigner(): Promise<ZeroWalletSigner> {
+        return this.provider.getSigner('browser');
+    }
 
-  async getChainId(): Promise<number> {
-    return (await this.getProvider())
-      .getNetwork()
-      .then((network) => network.chainId);
-  }
+    async isAuthorized(): Promise<boolean> {
+        return (
+            this.store.get('ZeroWalletConnected') === 'true' &&
+            this.store.get('zeroWalletPrivateKey') !== undefined
+        );
+    }
 
-  async getProvider(): Promise<ZeroWalletProvider> {
-    return this.provider;
-  }
+    async switchChain(chainId: SupportedChainId): Promise<Chain> {
+        return await this.provider.switchNetwork(chainId);
+    }
 
-  async getSigner(): Promise<ZeroWalletSigner> {
-    return this.provider.getSigner("browser");
-  }
+    protected onAccountsChanged(accounts: string[]) {
+        if (accounts.length === 0) this.emit('disconnect');
+        else
+            this.emit('change', {
+                account: getAddress(accounts[0] as string)
+            });
+    }
 
-  async isAuthorized(): Promise<boolean> {
-    return (
-      this.store.get("ZeroWalletConnected") === "true" &&
-      this.store.get("zeroWalletPrivateKey") !== undefined
-    );
-  }
+    protected onChainChanged(chainId: number | string) {
+        const id = normalizeChainId(chainId);
+        const unsupported = this.isChainUnsupported(id);
+        this.emit('change', { chain: { id, unsupported } });
+    }
 
-  async switchChain(chainId: SupportedChainId): Promise<Chain> {
-    return await this.provider.switchNetwork(chainId);
-  }
-
-  protected onAccountsChanged(accounts: string[]) {
-    if (accounts.length === 0) this.emit("disconnect");
-    else
-      this.emit("change", {
-        account: getAddress(accounts[0] as string),
-      });
-  }
-
-  protected onChainChanged(chainId: number | string) {
-    const id = normalizeChainId(chainId);
-    const unsupported = this.isChainUnsupported(id);
-    this.emit("change", { chain: { id, unsupported } });
-  }
-
-  protected onDisconnect() {
-    this.emit("disconnect");
-  }
+    protected onDisconnect() {
+        this.emit('disconnect');
+    }
 }
