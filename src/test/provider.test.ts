@@ -52,7 +52,7 @@ describe('Creation', () => {
         expect(provider).toBeInstanceOf(ZeroWalletProvider);
     });
 
-    test('Correctly instantiate a contract instance with ZeroWalletSigner', () => {
+    test('Correctly instantiate a contract instance with ZeroWalletSigner', async () => {
         const store = StorageFactory.create('browser');
         const provider = new ZeroWalletProvider(
             `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
@@ -66,5 +66,8 @@ describe('Creation', () => {
             mockAbi,
             signer
         );
+
+        const ff =  await contract.populateTransaction.set(1);
+        console.log(ff)
     });
 });

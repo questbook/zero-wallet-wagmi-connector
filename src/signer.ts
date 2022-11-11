@@ -244,7 +244,11 @@ export class ZeroWalletSigner {
     zeroWallet: ethers.Wallet;
     readonly provider: ZeroWalletProvider;
     recoveryMechansim: RecoveryMechanism | undefined;
+                // @ts-ignore
+
     _index: number;
+                // @ts-ignore
+
     _address: string;
 
     readonly _isSigner: boolean;
@@ -262,7 +266,8 @@ export class ZeroWalletSigner {
         }
         
         this.store = store;
-        defineReadOnly(this, "provider", provider);
+        this.provider = provider;
+        // defineReadOnly(this, "provider", provider);
 
         if (addressOrIndex == null) { addressOrIndex = 0; }
 
@@ -280,9 +285,11 @@ export class ZeroWalletSigner {
 
         if (typeof addressOrIndex === 'string') {
             this._address = this.provider.formatter.address(addressOrIndex);
+            // @ts-ignore
             defineReadOnly(this, "_index", null);
         } else if (typeof addressOrIndex === 'number') {
             this._index = addressOrIndex;
+            // @ts-ignore
             defineReadOnly(this, "_address", null);
         } else {
             logger.throwArgumentError(
