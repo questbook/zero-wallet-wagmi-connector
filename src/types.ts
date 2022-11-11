@@ -7,6 +7,41 @@ export type ZeroWalletConnectorOptions = {
     jsonRpcProviderUrl: string;
     store: string;
     recoveryMechanism: RecoveryMechanism;
+    zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
 };
 
 export type NameToClassValue<T extends IStoreable> = { [key: string]: T };
+
+export type ZeroWalletServerEndpoints = {
+    nonceProvider: string;
+    gasStation: string;
+    transactionBuilder: string;
+    authorizer: string;
+};
+
+export type BuildExecTransactionType = {
+    to: string;
+    value: number;
+    data: string;
+    operation: number;
+    targetTxGas: number;
+    baseGas: number;
+    gasPrice: number;
+    gasToken: string;
+    refundReceiver: string;
+    nonce: number;
+};
+
+export type WebHookAttributesType = {
+    nonce: string;
+    signedNonce: SignedTransaction;
+    to: string;
+    chainId: number;
+};
+
+export type SignedTransaction = {
+    transactionHash: string;
+    r: string;
+    s: string;
+    v: number;
+};

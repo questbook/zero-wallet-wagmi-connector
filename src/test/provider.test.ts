@@ -67,7 +67,7 @@ describe('Creation', () => {
             signer
         );
 
-        const ff =  await contract.populateTransaction.set(1);
-        console.log(ff)
+        const ff = await contract.populateTransaction.set(1);
+        console.log(ff);
     });
 });

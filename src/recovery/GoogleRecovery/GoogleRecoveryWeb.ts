@@ -2,10 +2,10 @@ import { Wallet } from 'ethers';
 import { RecoveryMechanism } from '../types';
 import { GoogleRecoveryMechanismOptions, Metadata } from './types';
 import {
+    _isNumber,
     getRandomString,
     loadGoogleScript,
-    uploadTextFileToDrive,
-    _isNumber
+    uploadTextFileToDrive
 } from './utils';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
@@ -32,7 +32,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
             gapi.load('client', { callback: resolve, onerror: reject });
         });
 
-        await gapi.client.init({}).then(function () {
+        await gapi.client.init({}).then(() => {
             gapi.client.load(
                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
             );
@@ -73,6 +73,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
                         if (resp.error !== undefined) {
                             reject(resp);
                         }
+
                         // GIS has automatically updated gapi.client with the newly issued access token.
                         // console.log(
                         //   "gapi.client access token: " +
@@ -80,6 +81,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
                         // );
                         resolve(resp);
                     };
+
                     this._tokenClient.requestAccessToken();
                 } catch (err) {
                     // console.log(err);
@@ -149,6 +151,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
                     this.options.fileNameGD + keyId.toString()
                 }\' and trashed = false`;
         }
+
         const keyFileQueryResponse = await gapi.client.drive.files.list({
             q: keyFileQuerySelector,
             spaces: 'drive'
@@ -162,6 +165,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
                 return _isNumber(file.name!.slice(baseKeyFileLength));
             });
         }
+
         return result || [];
     }
 
@@ -220,6 +224,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
         if (!this.options.allowMultiKeys) {
             return this.options.fileNameGD;
         }
+
         let maxExistingNumber = 0;
         const baseKeyFileLength = this.options.fileNameGD.length;
         keyFilesInFolder.forEach((keyFile) => {
@@ -288,6 +293,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
             } else if (err instanceof Error) {
                 error = err.message;
             }
+
             try {
                 await this._getToken(err);
                 try {
@@ -302,6 +308,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
                 }
             } catch {}
         }
+
         // setExportLoading(false);
         if (error.length > 0) throw new Error(error.toString());
         return newFileID;
@@ -319,6 +326,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
             } else if (err instanceof Error) {
                 error = err.message;
             }
+
             try {
                 await this._getToken(err);
                 try {
@@ -333,6 +341,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
                 }
             } catch {}
         }
+
         // setImportLoading(false);
         if (!newWallet) throw new Error(error.toString());
         return newWallet;

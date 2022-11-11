@@ -8,6 +8,7 @@ export class BrowserStorage implements IStoreable {
             if (!item) {
                 return null;
             }
+
             return item;
         } catch {
             throw new Error('Failed to get item from local storage');

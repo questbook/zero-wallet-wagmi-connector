@@ -1,15 +1,16 @@
-import { SupportedChainId, chainsNames } from './constants/chains';
 import { ethers } from 'ethers';
 import { deepCopy, fetchJson } from 'ethers/lib/utils';
+import { ZeroWalletServerEndpoints } from 'types';
+import { Chain } from 'wagmi';
+import { chainsNames, SupportedChainId } from './constants/chains';
+import { IStoreable } from './store/IStoreable';
+import { StorageFactory } from './store/storageFactory';
 import {
     GoogleRecoveryMechanismOptions,
     GoogleRecoveryWeb,
     RecoveryMechanism
 } from './recovery';
 import { ZeroWalletSigner } from './signer';
-import { IStoreable } from './store/IStoreable';
-import { StorageFactory } from './store/storageFactory';
-import { Chain } from 'wagmi';
 
 export const _constructorGuard = {};
 const GOOGLE_CLEINT_ID = process.env.GOOGLE_CLIENT_ID!;
@@ -21,7 +22,6 @@ function getResult(payload: {
     result?: any;
 }): any {
     if (payload.error) {
-        // @TODO: not any
         const error: any = new Error(payload.error.message);
         error.code = payload.error.code;
         error.data = payload.error.data;
@@ -34,13 +34,16 @@ function getResult(payload: {
 export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     private store: IStoreable;
     zeroWalletNetwork: ethers.providers.Network;
+    zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
 
     constructor(
         jsonRpcProviderUrl: string,
         network: ethers.providers.Network,
-        store: IStoreable
+        store: IStoreable,
+        zeroWalletServerEndpoints: ZeroWalletServerEndpoints
     ) {
         super(jsonRpcProviderUrl);
+        this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
         this.store = store;
         this.zeroWalletNetwork = network;
     }
@@ -61,6 +64,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             _constructorGuard,
             this,
             this.store,
+            this.zeroWalletServerEndpoints,
             addressOrIndex,
             googleRecoveryWeb
         );
@@ -75,6 +79,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             // @TODO add code for calling zero-wallet-server-sdk
             // should return the transaction hash
         }
+
         const request = {
             method: method,
             params: params,

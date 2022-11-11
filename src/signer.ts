@@ -1,15 +1,12 @@
 import {
-    TransactionRequest,
-    TransactionResponse,
     BlockTag,
-    FeeData
+    FeeData,
+    TransactionRequest,
+    TransactionResponse
 } from '@ethersproject/abstract-provider';
-import { BigNumber, ethers, TypedDataDomain, TypedDataField } from 'ethers';
-import { ZeroWalletProvider } from './provider';
 import { Logger } from '@ethersproject/logger';
-import { IStoreable } from 'store/IStoreable';
-import { RecoveryMechanism } from 'recovery';
-import { _constructorGuard } from './provider'
+import axios from 'axios';
+import { BigNumber, ethers, TypedDataDomain, TypedDataField } from 'ethers';
 import {
     Bytes,
     Deferrable,
@@ -20,6 +17,15 @@ import {
     shallowCopy,
     toUtf8Bytes
 } from 'ethers/lib/utils';
+import { RecoveryMechanism } from 'recovery';
+import { IStoreable } from 'store/IStoreable';
+import {
+    BuildExecTransactionType,
+    WebHookAttributesType,
+    ZeroWalletServerEndpoints
+} from 'types';
+import { ZeroWalletProvider } from './provider';
+import { _constructorGuard } from './provider';
 
 const version = 'providers/5.7.2';
 const logger = new Logger(version);
@@ -65,7 +71,7 @@ function spelunk(
     value: any,
     requireData: boolean
 ): null | { message: string; data: null | string } {
-    if (value == null) {
+    if (value === null) {
         return null;
     }
 
@@ -85,6 +91,7 @@ function spelunk(
                 return result;
             }
         }
+
         return null;
     }
 
@@ -124,7 +131,7 @@ function checkError(method: string, error: any, params: any): any {
     if (method === 'estimateGas') {
         // Try to find something, with a preference on SERVER_ERROR body
         let result = spelunk(error.body, false);
-        if (result == null) {
+        if (result === null) {
             result = spelunk(error, false);
         }
 
@@ -143,8 +150,6 @@ function checkError(method: string, error: any, params: any): any {
         }
     }
 
-    // @TODO: Should we spelunk for message too?
-
     let message = error.message;
     if (
         error.code === Logger.errors.SERVER_ERROR &&
@@ -157,6 +162,7 @@ function checkError(method: string, error: any, params: any): any {
     } else if (typeof error.responseText === 'string') {
         message = error.responseText;
     }
+
     message = (message || '').toLowerCase();
 
     // "insufficient funds for gas * price + value + cost(data)"
@@ -241,35 +247,44 @@ function checkError(method: string, error: any, params: any): any {
 
 export class ZeroWalletSigner {
     private store: IStoreable;
-    zeroWallet: ethers.Wallet;
+
     readonly provider: ZeroWalletProvider;
-    recoveryMechansim: RecoveryMechanism | undefined;
-                // @ts-ignore
-
-    _index: number;
-                // @ts-ignore
-
-    _address: string;
-
     readonly _isSigner: boolean;
+
+    zeroWallet: ethers.Wallet;
+    recoveryMechansim: RecoveryMechanism | undefined;
+
+    // @ts-ignore
+    _index: number;
+
+    // @ts-ignore
+    _address: string;
+    scwAddress?: string;
+
+    zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
 
     constructor(
         constructorGuard: any,
         provider: ZeroWalletProvider,
         store: IStoreable,
+        zeroWalletServerEndpoints: ZeroWalletServerEndpoints,
         addressOrIndex?: string | number,
         recoveryMechansim?: RecoveryMechanism
     ) {
-
         if (constructorGuard !== _constructorGuard) {
-            throw new Error("do not call the JsonRpcSigner constructor directly; use provider.getSigner");
+            throw new Error(
+                'do not call the JsonRpcSigner constructor directly; use provider.getSigner'
+            );
         }
-        
+
+        this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
         this.store = store;
         this.provider = provider;
         // defineReadOnly(this, "provider", provider);
 
-        if (addressOrIndex == null) { addressOrIndex = 0; }
+        if (addressOrIndex === null) {
+            addressOrIndex = 0;
+        }
 
         const zeroWalletPrivateKey = this.store.get('zeroWalletPrivateKey');
 
@@ -286,11 +301,11 @@ export class ZeroWalletSigner {
         if (typeof addressOrIndex === 'string') {
             this._address = this.provider.formatter.address(addressOrIndex);
             // @ts-ignore
-            defineReadOnly(this, "_index", null);
+            defineReadOnly(this, '_index', null);
         } else if (typeof addressOrIndex === 'number') {
             this._index = addressOrIndex;
             // @ts-ignore
-            defineReadOnly(this, "_address", null);
+            defineReadOnly(this, '_address', null);
         } else {
             logger.throwArgumentError(
                 'invalid address or index',
@@ -310,19 +325,21 @@ export class ZeroWalletSigner {
             this.checkTransaction(transaction)
         );
 
-        if (tx.to != null) {
+        if (tx.to !== null) {
             tx.to = Promise.resolve(tx.to).then(async (to) => {
-                if (to == null) {
+                if (to === null) {
                     return undefined;
                 }
+
                 const address = await this.resolveName(to);
-                if (address == null) {
+                if (address === null) {
                     logger.throwArgumentError(
                         'provided ENS name resolves to null',
                         'tx.to',
                         to
                     );
                 }
+
                 return address;
             });
 
@@ -332,8 +349,8 @@ export class ZeroWalletSigner {
 
         // Do not allow mixing pre-eip-1559 and eip-1559 properties
         const hasEip1559 =
-            tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null;
-        if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
+            tx.maxFeePerGas !== null || tx.maxPriorityFeePerGas !== null;
+        if (tx.gasPrice !== null && (tx.type === 2 || hasEip1559)) {
             logger.throwArgumentError(
                 'eip-1559 transaction do not support gasPrice',
                 'transaction',
@@ -348,9 +365,9 @@ export class ZeroWalletSigner {
         }
 
         if (
-            (tx.type === 2 || tx.type == null) &&
-            tx.maxFeePerGas != null &&
-            tx.maxPriorityFeePerGas != null
+            (tx.type === 2 || tx.type === null) &&
+            tx.maxFeePerGas !== null &&
+            tx.maxPriorityFeePerGas !== null
         ) {
             // Fully-formed EIP-1559 transaction (skip getFeeData)
             tx.type = 2;
@@ -358,26 +375,26 @@ export class ZeroWalletSigner {
             // Explicit Legacy or EIP-2930 transaction
 
             // Populate missing gasPrice
-            if (tx.gasPrice == null) {
+            if (tx.gasPrice === null) {
                 tx.gasPrice = this.getGasPrice();
             }
         } else {
             // We need to get fee data to determine things
             const feeData = await this.getFeeData();
 
-            if (tx.type == null) {
+            if (tx.type === null) {
                 // We need to auto-detect the intended type of this transaction...
 
                 if (
-                    feeData.maxFeePerGas != null &&
-                    feeData.maxPriorityFeePerGas != null
+                    feeData.maxFeePerGas !== null &&
+                    feeData.maxPriorityFeePerGas !== null
                 ) {
                     // The network supports EIP-1559!
 
                     // Upgrade transaction from null to eip-1559
                     tx.type = 2;
 
-                    if (tx.gasPrice != null) {
+                    if (tx.gasPrice !== null) {
                         // Using legacy gasPrice property on an eip-1559 network,
                         // so use gasPrice as both fee properties
                         const gasPrice = tx.gasPrice;
@@ -386,15 +403,16 @@ export class ZeroWalletSigner {
                         tx.maxPriorityFeePerGas = gasPrice;
                     } else {
                         // Populate missing fee data
-                        if (tx.maxFeePerGas == null) {
+                        if (tx.maxFeePerGas === null) {
                             tx.maxFeePerGas = feeData.maxFeePerGas;
                         }
-                        if (tx.maxPriorityFeePerGas == null) {
+
+                        if (tx.maxPriorityFeePerGas === null) {
                             tx.maxPriorityFeePerGas =
                                 feeData.maxPriorityFeePerGas;
                         }
                     }
-                } else if (feeData.gasPrice != null) {
+                } else if (feeData.gasPrice !== null) {
                     // Network doesn't support EIP-1559...
 
                     // ...but they are trying to use EIP-1559 properties
@@ -409,7 +427,7 @@ export class ZeroWalletSigner {
                     }
 
                     // Populate missing fee data
-                    if (tx.gasPrice == null) {
+                    if (tx.gasPrice === null) {
                         tx.gasPrice = feeData.gasPrice;
                     }
 
@@ -429,21 +447,22 @@ export class ZeroWalletSigner {
                 // Explicitly using EIP-1559
 
                 // Populate missing fee data
-                if (tx.maxFeePerGas == null) {
+                if (tx.maxFeePerGas === null) {
                     tx.maxFeePerGas = feeData.maxFeePerGas ?? undefined;
                 }
-                if (tx.maxPriorityFeePerGas == null) {
+
+                if (tx.maxPriorityFeePerGas === null) {
                     tx.maxPriorityFeePerGas =
                         feeData.maxPriorityFeePerGas ?? undefined;
                 }
             }
         }
 
-        if (tx.nonce == null) {
+        if (tx.nonce === null) {
             tx.nonce = this.getTransactionCount('pending');
         }
 
-        if (tx.gasLimit == null) {
+        if (tx.gasLimit === null) {
             tx.gasLimit = this.estimateGas(tx).catch((error) => {
                 if (forwardErrors.indexOf(error.code) >= 0) {
                     throw error;
@@ -460,7 +479,7 @@ export class ZeroWalletSigner {
             });
         }
 
-        if (tx.chainId == null) {
+        if (tx.chainId === null) {
             tx.chainId = this.getChainId();
         } else {
             tx.chainId = Promise.all([
@@ -474,6 +493,7 @@ export class ZeroWalletSigner {
                         transaction
                     );
                 }
+
                 return results[0];
             });
         }
@@ -538,7 +558,7 @@ export class ZeroWalletSigner {
 
         const tx = shallowCopy(transaction);
 
-        if (tx.from == null) {
+        if (tx.from === null) {
             tx.from = this.getAddress();
         } else {
             // Make sure any provided address matches this signer
@@ -553,6 +573,7 @@ export class ZeroWalletSigner {
                         transaction
                     );
                 }
+
                 return result[0];
             });
         }
@@ -645,10 +666,11 @@ export class ZeroWalletSigner {
             throw new Error('Zero Wallet is not initialized yet');
         }
 
-        //@TODO - fetch SCW Address from the zero-wallet-server-sdk
-        const scwAddress = '0x0000000000000000000000000000000000000000';
-        //@TODO - call build transaction from the zero-wallet-server-sdk
-        const safeTxBody = {};
+        const { scwAddress, safeTxBody } = await this.buildTransaction(
+            transaction
+        );
+
+        this.scwAddress = scwAddress;
 
         const chainId = (await this.provider.getNetwork()).chainId;
 
@@ -676,32 +698,35 @@ export class ZeroWalletSigner {
             if (address) {
                 address = address.toLowerCase();
             }
+
             return address;
         });
 
         // The JSON-RPC for eth_sendTransaction uses 90000 gas; if the user
         // wishes to use this, it is easy to specify explicitly, otherwise
         // we look it up for them.
-        if (transaction.gasLimit == null) {
+        if (transaction.gasLimit === null) {
             const estimate = shallowCopy(transaction);
             estimate.from = fromAddress;
             transaction.gasLimit = this.provider.estimateGas(estimate);
         }
 
-        if (transaction.to != null) {
+        if (transaction.to !== null) {
             transaction.to = Promise.resolve(transaction.to).then(
                 async (to) => {
-                    if (to == null) {
+                    if (to === null) {
                         return undefined;
                     }
+
                     const address = await this.provider.resolveName(to);
-                    if (address == null) {
+                    if (address === null) {
                         logger.throwArgumentError(
                             'provided ENS name resolves to null',
                             'tx.to',
                             to
                         );
                     }
+
                     return address ?? undefined;
                 }
             );
@@ -711,7 +736,7 @@ export class ZeroWalletSigner {
             tx: resolveProperties(transaction),
             sender: fromAddress
         }).then(({ tx, sender }) => {
-            if (tx.from != null) {
+            if (tx.from !== null) {
                 if (tx.from.toLowerCase() !== sender) {
                     logger.throwArgumentError(
                         'from address mismatch',
@@ -758,23 +783,31 @@ export class ZeroWalletSigner {
     async sendTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<TransactionResponse> {
-        // This cannot be mined any earlier than any recent block
-        const blockNumber = await this.provider._getInternalBlockNumber(
-            100 + 2 * this.provider.pollingInterval
+        const { scwAddress, safeTxBody } = await this.buildTransaction(
+            transaction
         );
 
-        // Send the transaction
-        const hash = await this.sendUncheckedTransaction(transaction);
+        this.scwAddress = scwAddress;
 
-        try {
-            const tx = await this.provider.getTransaction(hash);
-            // @TODO: check if there's an issue in the next line
-            // if (tx === null) { return undefined; }
-            return this.provider._wrapTransaction(tx, hash, blockNumber);
-        } catch (error) {
-            (<any>error).transactionHash = hash;
-            throw error;
-        }
+        const signature = await this.signTransaction(transaction);
+        const nonce = await this.getNonce();
+        const signedNonce = await this.signNonce(nonce);
+
+        const webHookAttributes: WebHookAttributesType = {
+            signedNonce: signedNonce,
+            nonce: nonce,
+            to: transaction.to,
+            chain_id: transaction.chainId
+        };
+
+        // Send the transaction
+
+        return await axios.post(this.zeroWalletServerEndpoints.gasStation, {
+            execTransactionBody: safeTxBody,
+            walletAddress: this.scwAddress,
+            signature,
+            webHookAttributes
+        });
     }
 
     async _signTypedData(
@@ -783,6 +816,73 @@ export class ZeroWalletSigner {
         value: Record<string, any>
     ): Promise<string> {
         return await this.zeroWallet._signTypedData(domain, types, value);
+    }
+
+    async signNonce(
+        nonce: string
+    ): Promise<{ v: number; r: string; s: string; transactionHash: string }> {
+        const nonceHash = ethers.utils.hashMessage(nonce);
+        const nonceSigString: string = await this.zeroWallet.signMessage(nonce);
+        const nonceSig: ethers.Signature =
+            ethers.utils.splitSignature(nonceSigString);
+
+        return {
+            v: nonceSig.v,
+            r: nonceSig.r,
+            s: nonceSig.s,
+            transactionHash: nonceHash
+        };
+    }
+
+    async getNonce(): Promise<string> {
+        if (!this.zeroWalletServerEndpoints.nonceProvider) {
+            throw new Error('nonce Provider is not attached');
+        }
+
+        const nonce: string | null = this.store.get('nonce');
+
+        if (nonce) return nonce;
+
+        const response = await axios.post(
+            this.zeroWalletServerEndpoints.nonceProvider,
+            {
+                webwallet_address: this.zeroWallet.address
+            }
+        );
+
+        if (response.data && response.data.nonce !== 'Token expired') {
+            this.store.set('nonce', response.data.nonce);
+            return response.data.nonce;
+        }
+
+        throw new Error('wallet is not authorized');
+    }
+
+    async buildTransaction(
+        tx: Deferrable<TransactionRequest>
+    ): Promise<{ scwAddress: string; safeTxBody: BuildExecTransactionType }> {
+        const response = await axios.post<{
+            safeTxBody: BuildExecTransactionType;
+            scwAddress: string;
+        }>(this.zeroWalletServerEndpoints.transactionBuilder, {
+            zeroWalletAddress: this.zeroWallet.address,
+            data: tx,
+            to: tx.to
+        });
+        const { safeTxBody, scwAddress } = response.data;
+
+        return { safeTxBody, scwAddress };
+    }
+
+    async authorize(): Promise<boolean> {
+        const response = await axios.post(
+            this.zeroWalletServerEndpoints.authorizer,
+            {
+                webwallet_address: this.zeroWallet.address
+            }
+        );
+
+        return !!response.data?.authorize;
     }
 
     async unlock(password: string): Promise<boolean> {
