@@ -1,13 +1,13 @@
+import { SupportedChainId } from 'constants/chains';
 import { ethers, Signer } from 'ethers';
-import { ZeroWalletConnectorOptions } from './types';
+import { getAddress } from 'ethers/lib/utils';
+import { IStoreable } from 'store/IStoreable';
+import { StorageFactory } from 'store/storageFactory';
+import { Chain, Connector, ConnectorData } from 'wagmi';
+import { normalizeChainId } from 'utils/normalizeChainId';
 import { ZeroWalletProvider } from './provider';
 import { ZeroWalletSigner } from './signer';
-import { Chain, Connector, ConnectorData } from 'wagmi';
-import { StorageFactory } from 'store/storageFactory';
-import { IStoreable } from 'store/IStoreable';
-import { getAddress } from 'ethers/lib/utils';
-import { normalizeChainId } from 'utils/normalizeChainId';
-import { SupportedChainId } from 'constants/chains';
+import { ZeroWalletConnectorOptions } from './types';
 
 export class ZeroWalletConnector extends Connector<
     ZeroWalletProvider,
@@ -34,7 +34,8 @@ export class ZeroWalletConnector extends Connector<
         this.provider = new ZeroWalletProvider(
             config.options.jsonRpcProviderUrl,
             _chain,
-            this.store
+            this.store,
+            config.options.zeroWalletServerEndpoints
         );
     }
 

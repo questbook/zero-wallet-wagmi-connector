@@ -57,6 +57,7 @@ export const getRandomString = (stringLength: number): string => {
             Math.floor(Math.random() * charactersLength)
         );
     }
+
     return result;
 };
 

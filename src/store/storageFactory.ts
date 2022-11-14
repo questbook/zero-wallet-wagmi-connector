@@ -1,6 +1,5 @@
-import { IStoreable } from './IStoreable';
 import { BrowserStorage } from './browserStorage';
-import { NameToClassValue } from 'types';
+import { IStoreable } from './IStoreable';
 
 export abstract class StorageFactory {
     private static nameToClass: Record<string, any> = {
