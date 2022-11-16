@@ -282,7 +282,7 @@ export class ZeroWalletSigner {
         this.provider = provider;
         // defineReadOnly(this, "provider", provider);
 
-        if (addressOrIndex === null) {
+        if (addressOrIndex === undefined) {
             addressOrIndex = 0;
         }
 

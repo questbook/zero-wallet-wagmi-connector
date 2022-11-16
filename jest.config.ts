@@ -135,7 +135,7 @@ export default {
     // snapshotSerializers: [],
 
     // The test environment that will be used for testing
-    testEnvironment: 'jsdom'
+    testEnvironment: 'jest-environment-jsdom'
 
     // Options that will be passed to the testEnvironment
     // testEnvironmentOptions: {},
@@ -183,4 +183,14 @@ export default {
 
     // Whether to use watchman for file crawling
     // watchman: true,
+};
+
+module.exports = {
+    globals: {
+        'ts-jest': {
+            diagnostics: {
+                exclude: ['!**/*.(spec|test).ts?(x)']
+            }
+        }
+    }
 };

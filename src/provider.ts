@@ -75,11 +75,6 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     }
 
     async send(method: string, params: Array<any>): Promise<any> {
-        if (method == 'eth_sendTransaction') {
-            // @TODO add code for calling zero-wallet-server-sdk
-            // should return the transaction hash
-        }
-
         const request = {
             method: method,
             params: params,
