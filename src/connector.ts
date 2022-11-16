@@ -35,7 +35,8 @@ export class ZeroWalletConnector extends Connector<
             config.options.jsonRpcProviderUrl,
             _chain,
             this.store,
-            config.options.zeroWalletServerEndpoints
+            config.options.zeroWalletServerEndpoints,
+            config.options.gasTankName
         );
     }
 

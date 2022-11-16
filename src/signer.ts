@@ -810,7 +810,8 @@ export class ZeroWalletSigner {
             execTransactionBody: safeTxBody,
             walletAddress: this.scwAddress,
             signature,
-            webHookAttributes
+            webHookAttributes,
+            gasTankName: this.gasTankName
         });
     }
 
@@ -884,7 +885,8 @@ export class ZeroWalletSigner {
         }>(this.zeroWalletServerEndpoints.transactionBuilder, {
             zeroWalletAddress: this.zeroWallet.address,
             data: tx,
-            webHookAttributes
+            webHookAttributes,
+            gasTankName: this.gasTankName
         });
         const { safeTxBody, scwAddress } = response.data;
 

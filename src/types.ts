@@ -8,6 +8,7 @@ export type ZeroWalletConnectorOptions = {
     store: string;
     recoveryMechanism: RecoveryMechanism;
     zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
+    gasTankName: string;
 };
 
 export type NameToClassValue<T extends IStoreable> = { [key: string]: T };

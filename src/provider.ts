@@ -4,11 +4,9 @@ import { ZeroWalletServerEndpoints } from 'types';
 import { Chain } from 'wagmi';
 import { chainsNames, SupportedChainId } from './constants/chains';
 import { IStoreable } from './store/IStoreable';
-import { StorageFactory } from './store/storageFactory';
 import {
     GoogleRecoveryMechanismOptions,
-    GoogleRecoveryWeb,
-    RecoveryMechanism
+    GoogleRecoveryWeb
 } from './recovery';
 import { ZeroWalletSigner } from './signer';
 
@@ -35,17 +33,20 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     private store: IStoreable;
     zeroWalletNetwork: ethers.providers.Network;
     zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
+    gasTankName: string;
 
     constructor(
         jsonRpcProviderUrl: string,
         network: ethers.providers.Network,
         store: IStoreable,
-        zeroWalletServerEndpoints: ZeroWalletServerEndpoints
+        zeroWalletServerEndpoints: ZeroWalletServerEndpoints,
+        gasTankName: string
     ) {
         super(jsonRpcProviderUrl);
         this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
         this.store = store;
         this.zeroWalletNetwork = network;
+        this.gasTankName = gasTankName;
     }
 
     getSigner(addressOrIndex?: string | number): ZeroWalletSigner {
@@ -65,6 +66,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             this,
             this.store,
             this.zeroWalletServerEndpoints,
+            this.gasTankName,
             addressOrIndex,
             googleRecoveryWeb
         );
@@ -134,7 +136,6 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     }
 
     async switchNetwork(chainId: SupportedChainId): Promise<Chain> {
-        const network = await this.getNetwork();
 
         this.zeroWalletNetwork.chainId = chainId;
 
