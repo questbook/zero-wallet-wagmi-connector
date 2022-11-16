@@ -302,6 +302,8 @@ export class ZeroWalletSigner {
             this.zeroWallet = new ethers.Wallet(zeroWalletPrivateKey);
         }
 
+        this.zeroWallet = this.zeroWallet.connect(this.provider);
+
         if (typeof addressOrIndex === 'string') {
             this._address = this.provider.formatter.address(addressOrIndex);
             // @ts-ignore
