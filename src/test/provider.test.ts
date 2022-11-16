@@ -5,10 +5,10 @@
 import { describe, test } from '@jest/globals';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { ZeroWalletServerEndpoints } from 'types';
-import { BuildExecTransactionType } from 'types';
+import { BuildExecTransactionType, ZeroWalletServerEndpoints } from 'types';
 import { SupportedChainId } from '../constants/chains';
 import { ZeroWalletProvider } from '../provider';
+import { ZeroWalletSigner } from '../signer';
 import { StorageFactory } from '../store/storageFactory';
 import { configEnv } from '../utils/env';
 
@@ -20,60 +20,30 @@ jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 const zeroWalletServerEndpoints: ZeroWalletServerEndpoints = {
-    nonceProvider: 'https://nonce-provider.zero-wallet.io', // data: { nonce: string }
-    gasStation: 'https://gas-station.zero-wallet.io', // data: { txHash: string }
-    transactionBuilder: 'https://transaction-builder.zero-wallet.io', // data: { safeTxBody: BuildExecTransactionType; scwAddress: string; }
-    authorizer: 'https://authorizer.zero-wallet.io', // data: { authorizer: any }
-    scwDeployer: 'https://scw-deployer.zero-wallet.io', // data: { } - no data returned
-    nonceRefresher: 'https://nonce-refresher.zero-wallet.io' // data: { nonce: string }
+    nonceProvider: 'nonceProviderUrl', // data: { nonce: string }
+    gasStation: 'gasStationUrl', // data: { txHash: string }
+    transactionBuilder: 'transactionBuilderUrl', // data: { safeTxBody: BuildExecTransactionType; scwAddress: string; }
+    authorizer: 'authorizerUrl', // data: { authorizer: any }
+    scwDeployer: 'scwDeployerUrl', // data: { } - no data returned
+    nonceRefresher: 'nonceRefresherUrl' // data: { nonce: string }
 };
 
 afterAll(() => jest.resetAllMocks());
 
-describe('Creation', () => {
-    const mockAbi = [
-        {
-            inputs: [
-                {
-                    internalType: 'uint256',
-                    name: 'x',
-                    type: 'uint256'
-                }
-            ],
-            name: 'set',
-            outputs: [],
-            stateMutability: 'nonpayable',
-            type: 'function'
-        },
-        {
-            inputs: [],
-            name: 'value',
-            outputs: [
-                {
-                    internalType: 'uint256',
-                    name: '',
-                    type: 'uint256'
-                }
-            ],
-            stateMutability: 'view',
-            type: 'function'
-        }
-    ];
-    const mockContractAddress = '0xA119f2120E82380DC89832B8F3740fDC47b0444f';
-});
-
-describe('Provider methods', () => {
+describe('Test ZeroWalletProvider methods', () => {
     const network: ethers.providers.Network = {
         chainId: 5,
         name: 'Goerli'
     };
     const storage = StorageFactory.create('browser');
-    const jsonRpcProviderUrl = process.env.ALCHEMY_API_KEY!;
+    const jsonRpcProviderUrl = 'https://eth-goerli.g.alchemy.com/v2/0x123';
+    const gasTankName = 'gasTankName';
     const provider = new ZeroWalletProvider(
         jsonRpcProviderUrl,
         network,
         storage,
-        zeroWalletServerEndpoints
+        zeroWalletServerEndpoints,
+        gasTankName
     );
 
     beforeAll(() => {
@@ -151,6 +121,7 @@ describe('Provider methods', () => {
     test('Get new Signer', () => {
         const signer = provider.getSigner();
         expect(signer).toBeTruthy();
+        expect(signer).toBeInstanceOf(ZeroWalletSigner);
     });
 
 });
