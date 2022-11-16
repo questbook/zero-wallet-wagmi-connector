@@ -811,7 +811,7 @@ export class ZeroWalletSigner {
             walletAddress: this.scwAddress,
             signature,
             webHookAttributes,
-            gasTankName: this.gasTankName
+            gas_tank_name: this.gasTankName
         });
     }
 
@@ -852,7 +852,7 @@ export class ZeroWalletSigner {
             this.zeroWalletServerEndpoints.nonceProvider,
             {
                 webwallet_address: this.zeroWallet.address,
-                gasTankName: this.gasTankName
+                gas_tank_name: this.gasTankName
             }
         );
 
@@ -886,7 +886,7 @@ export class ZeroWalletSigner {
             zeroWalletAddress: this.zeroWallet.address,
             data: tx,
             webHookAttributes,
-            gasTankName: this.gasTankName
+            gas_tank_name: this.gasTankName
         });
         const { safeTxBody, scwAddress } = response.data;
 
@@ -898,7 +898,7 @@ export class ZeroWalletSigner {
             this.zeroWalletServerEndpoints.authorizer,
             {
                 webwallet_address: this.zeroWallet.address,
-                gasTankName: this.gasTankName
+                gas_tank_name: this.gasTankName
             }
         );
 
