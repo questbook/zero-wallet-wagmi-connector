@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { RecoveryMechanism } from 'recovery';
 import { IStoreable } from 'store/IStoreable';
 
@@ -15,9 +14,12 @@ export type NameToClassValue<T extends IStoreable> = { [key: string]: T };
 
 export type ZeroWalletServerEndpoints = {
     nonceProvider: string;
+    nonceRefresher: string;
+    authorizer: string;
     gasStation: string;
     transactionBuilder: string;
-    authorizer: string;
+    scwDeployer: string;
+
 };
 
 export type BuildExecTransactionType = {

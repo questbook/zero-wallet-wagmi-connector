@@ -1,5 +1,5 @@
 import { SupportedChainId } from 'constants/chains';
-import { ethers, Signer } from 'ethers';
+import { ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 import { IStoreable } from 'store/IStoreable';
 import { StorageFactory } from 'store/storageFactory';

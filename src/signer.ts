@@ -800,8 +800,8 @@ export class ZeroWalletSigner {
         const webHookAttributes: WebHookAttributesType = {
             signedNonce: signedNonce,
             nonce: nonce,
-            to: transaction.to,
-            chain_id: transaction.chainId
+            to: (await transaction.to)!,
+            chainId: (await transaction.chainId)!
         };
 
         // Send the transaction
@@ -811,7 +811,7 @@ export class ZeroWalletSigner {
             walletAddress: this.scwAddress,
             signature,
             webHookAttributes,
-            gas_tank_name: this.gasTankName
+            gasTankName: this.gasTankName
         });
     }
 
@@ -851,8 +851,8 @@ export class ZeroWalletSigner {
         const response = await axios.post(
             this.zeroWalletServerEndpoints.nonceProvider,
             {
-                webwallet_address: this.zeroWallet.address,
-                gas_tank_name: this.gasTankName
+                zeroWalletAddress: this.zeroWallet.address,
+                gasTankName: this.gasTankName
             }
         );
 
@@ -888,7 +888,7 @@ export class ZeroWalletSigner {
             zeroWalletAddress: this.zeroWallet.address,
             data,
             webHookAttributes,
-            gas_tank_name: this.gasTankName
+            gasTankName: this.gasTankName
         });
         const { safeTxBody, scwAddress } = response.data;
 
@@ -899,8 +899,8 @@ export class ZeroWalletSigner {
         const response = await axios.post(
             this.zeroWalletServerEndpoints.authorizer,
             {
-                webwallet_address: this.zeroWallet.address,
-                gas_tank_name: this.gasTankName
+                zeroWalletAddress: this.zeroWallet.address,
+                gasTankName: this.gasTankName
             }
         );
 
@@ -911,6 +911,30 @@ export class ZeroWalletSigner {
         this.gasTankName = gasTankName;
     }
 
+    async deployScw(): Promise<void> {
+        await axios.post<string>(
+            this.zeroWalletServerEndpoints.scwDeployer,
+            {
+                zeroWalletAddress: this.zeroWallet.address,
+            }
+        );
+    }
+
+    async refreshNonce(): Promise<void> {
+        const response = await axios.post(this.zeroWalletServerEndpoints.nonceRefresher, {
+            zeroWalletAddress: this.zeroWallet.address,
+        })
+
+        if(!response.data?.nonce) {
+            throw new Error('nonce is not refreshed')
+        }
+
+        this.store.set('nonce', response.data.nonce);
+
+        return response.data.nonce;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async unlock(password: string): Promise<boolean> {
         throw new Error('Not supported yet!');
     }

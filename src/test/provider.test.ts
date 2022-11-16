@@ -23,7 +23,9 @@ const zeroWalletServerEndpoints: ZeroWalletServerEndpoints = {
     nonceProvider: 'https://nonce-provider.zero-wallet.io', // data: { nonce: string }
     gasStation: 'https://gas-station.zero-wallet.io', // data: { txHash: string }
     transactionBuilder: 'https://transaction-builder.zero-wallet.io', // data: { safeTxBody: BuildExecTransactionType; scwAddress: string; }
-    authorizer: 'https://authorizer.zero-wallet.io' // data: { authorizer: any }
+    authorizer: 'https://authorizer.zero-wallet.io', // data: { authorizer: any }
+    scwDeployer: 'https://scw-deployer.zero-wallet.io', // data: { } - no data returned
+    nonceRefresher: 'https://nonce-refresher.zero-wallet.io' // data: { nonce: string }
 };
 
 afterAll(() => jest.resetAllMocks());
