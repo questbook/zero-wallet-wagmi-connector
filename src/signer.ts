@@ -808,7 +808,7 @@ export class ZeroWalletSigner {
 
         return await axios.post(this.zeroWalletServerEndpoints.gasStation, {
             execTransactionBody: safeTxBody,
-            walletAddress: this.scwAddress,
+            zeroWalletAddress: this.scwAddress,
             signature,
             webHookAttributes,
             gasTankName: this.gasTankName
@@ -916,6 +916,7 @@ export class ZeroWalletSigner {
             this.zeroWalletServerEndpoints.scwDeployer,
             {
                 zeroWalletAddress: this.zeroWallet.address,
+                gasTankName: this.gasTankName
             }
         );
     }
@@ -923,6 +924,7 @@ export class ZeroWalletSigner {
     async refreshNonce(): Promise<void> {
         const response = await axios.post(this.zeroWalletServerEndpoints.nonceRefresher, {
             zeroWalletAddress: this.zeroWallet.address,
+            gasTankName: this.gasTankName
         })
 
         if(!response.data?.nonce) {
