@@ -861,13 +861,25 @@ export class ZeroWalletSigner {
     async buildTransaction(
         tx: Deferrable<TransactionRequest>
     ): Promise<{ scwAddress: string; safeTxBody: BuildExecTransactionType }> {
+
+        const nonce = await this.getNonce();
+        const signedNonce = await this.signNonce(nonce);
+        
+        const webHookAttributes = {
+            nonce,
+            signedNonce,
+            to: tx.to,
+            // eslint-disable-next-line camelcase
+            chain_id: tx.chainId
+        }
+
         const response = await axios.post<{
             safeTxBody: BuildExecTransactionType;
             scwAddress: string;
         }>(this.zeroWalletServerEndpoints.transactionBuilder, {
             zeroWalletAddress: this.zeroWallet.address,
             data: tx,
-            to: tx.to
+            webHookAttributes
         });
         const { safeTxBody, scwAddress } = response.data;
 
