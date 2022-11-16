@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import {
     BlockTag,
     FeeData,
@@ -260,6 +261,7 @@ export class ZeroWalletSigner {
     // @ts-ignore
     _address: string;
     scwAddress?: string;
+    gasTankName: string;
 
     zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
 
@@ -268,6 +270,7 @@ export class ZeroWalletSigner {
         provider: ZeroWalletProvider,
         store: IStoreable,
         zeroWalletServerEndpoints: ZeroWalletServerEndpoints,
+        gasTankName: string,
         addressOrIndex?: string | number,
         recoveryMechansim?: RecoveryMechanism
     ) {
@@ -277,6 +280,7 @@ export class ZeroWalletSigner {
             );
         }
 
+        this.gasTankName = gasTankName;
         this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
         this.store = store;
         this.provider = provider;
@@ -846,7 +850,8 @@ export class ZeroWalletSigner {
         const response = await axios.post(
             this.zeroWalletServerEndpoints.nonceProvider,
             {
-                webwallet_address: this.zeroWallet.address
+                webwallet_address: this.zeroWallet.address,
+                gasTankName: this.gasTankName
             }
         );
 
@@ -890,11 +895,16 @@ export class ZeroWalletSigner {
         const response = await axios.post(
             this.zeroWalletServerEndpoints.authorizer,
             {
-                webwallet_address: this.zeroWallet.address
+                webwallet_address: this.zeroWallet.address,
+                gasTankName: this.gasTankName
             }
         );
 
         return !!response.data?.authorize;
+    }
+
+    setGasTankName(gasTankName: string): void {
+        this.gasTankName = gasTankName;
     }
 
     async unlock(password: string): Promise<boolean> {
