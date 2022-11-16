@@ -879,12 +879,14 @@ export class ZeroWalletSigner {
             chain_id: tx.chainId
         }
 
+        const { data } = tx;
+
         const response = await axios.post<{
             safeTxBody: BuildExecTransactionType;
             scwAddress: string;
         }>(this.zeroWalletServerEndpoints.transactionBuilder, {
             zeroWalletAddress: this.zeroWallet.address,
-            data: tx,
+            data,
             webHookAttributes,
             gas_tank_name: this.gasTankName
         });
