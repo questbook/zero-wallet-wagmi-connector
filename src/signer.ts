@@ -22,6 +22,7 @@ import { RecoveryMechanism } from 'recovery';
 import { IStoreable } from 'store/IStoreable';
 import {
     BuildExecTransactionType,
+    DeployWebHookAttributesType,
     WebHookAttributesType,
     ZeroWalletServerEndpoints
 } from 'types';
@@ -808,13 +809,43 @@ export class ZeroWalletSigner {
 
         // Send the transaction
 
-        return await axios.post(this.zeroWalletServerEndpoints.gasStation, {
+        const response = await axios.post(this.zeroWalletServerEndpoints.gasStation, {
             execTransactionBody: safeTxBody,
             zeroWalletAddress: this.scwAddress,
             signature,
             webHookAttributes,
             gasTankName: this.gasTankName
         });
+
+        return {
+            hash: response.data.txHash,
+            confirmations: 1,
+            from: scwAddress,
+            wait: async () => {
+                return {    
+                    to: "string",
+                    from: "string",
+                    contractAddress: "string",
+                    transactionIndex: 1,
+                    gasUsed: ethers.BigNumber.from("1"),
+                    logsBloom: "string",
+                    blockHash: "string",
+                    transactionHash: "string",
+                    logs: [],
+                    blockNumber: 1,
+                    confirmations: 1,
+                    cumulativeGasUsed: ethers.BigNumber.from("1"),
+                    effectiveGasPrice: ethers.BigNumber.from("1"),
+                    byzantium: true,
+                    type: 1,
+                }
+            },
+            nonce: 1,
+            gasLimit: ethers.BigNumber.from("1"),
+            data: "string",
+            value: ethers.BigNumber.from("1"),
+            chainId: 1,
+        }
     }
 
     async _signTypedData(
@@ -914,11 +945,21 @@ export class ZeroWalletSigner {
     }
 
     async deployScw(): Promise<void> {
+
+        const nonce = await this.getNonce();
+        const signedNonce = await this.signNonce(nonce);
+
+        const webHookAttributes: DeployWebHookAttributesType = {
+            signedNonce: signedNonce,
+            nonce: nonce,
+        };
+
         await axios.post<string>(
             this.zeroWalletServerEndpoints.scwDeployer,
             {
                 zeroWalletAddress: this.zeroWallet.address,
-                gasTankName: this.gasTankName
+                gasTankName: this.gasTankName,
+                webHookAttributes
             }
         );
     }

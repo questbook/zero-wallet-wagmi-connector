@@ -42,6 +42,11 @@ export type WebHookAttributesType = {
     chainId: number;
 };
 
+export type DeployWebHookAttributesType = {
+    nonce: string;
+    signedNonce: SignedTransaction;
+};
+
 export type SignedTransaction = {
     transactionHash: string;
     r: string;
