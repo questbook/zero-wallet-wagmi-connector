@@ -18,16 +18,16 @@ import {
     shallowCopy,
     toUtf8Bytes
 } from 'ethers/lib/utils';
-import { RecoveryMechanism } from 'recovery';
-import { IStoreable } from 'store/IStoreable';
+import { IStoreable } from './store/IStoreable';
+import { ZeroWalletProvider } from './provider';
+import { _constructorGuard } from './provider';
+import { RecoveryMechanism } from './recovery';
 import {
     BuildExecTransactionType,
     DeployWebHookAttributesType,
     WebHookAttributesType,
     ZeroWalletServerEndpoints
-} from 'types';
-import { ZeroWalletProvider } from './provider';
-import { _constructorGuard } from './provider';
+} from './types';
 
 const version = 'providers/5.7.2';
 const logger = new Logger(version);
@@ -338,7 +338,7 @@ export class ZeroWalletSigner {
                     return undefined;
                 }
 
-                const address = await this.resolveName(to);
+                const address = await this.resolveName(to!);
                 if (address === null) {
                     logger.throwArgumentError(
                         'provided ENS name resolves to null',
@@ -351,7 +351,8 @@ export class ZeroWalletSigner {
             });
 
             // Prevent this error from causing an UnhandledPromiseException
-            tx.to.catch((error) => {});
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            tx.to.catch(() => {});
         }
 
         // Do not allow mixing pre-eip-1559 and eip-1559 properties
@@ -538,8 +539,9 @@ export class ZeroWalletSigner {
         return await this.provider.getFeeData();
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async getBalance(blockTag?: BlockTag): Promise<BigNumber> {
-        throw new Error('Method not implemented.');
+        throw new Error(`Method not implemented. ${blockTag}`);
     }
 
     async estimateGas(
@@ -607,8 +609,9 @@ export class ZeroWalletSigner {
             );
         }
     }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     connect(provider: ethers.providers.JsonRpcProvider): ZeroWalletSigner {
+        provider
         return logger.throwError(
             'cannot alter JSON-RPC Signer connection',
             Logger.errors.UNSUPPORTED_OPERATION,
@@ -725,7 +728,7 @@ export class ZeroWalletSigner {
                         return undefined;
                     }
 
-                    const address = await this.provider.resolveName(to);
+                    const address = await this.provider.resolveName(to!);
                     if (address === null) {
                         logger.throwArgumentError(
                             'provided ENS name resolves to null',
@@ -744,7 +747,7 @@ export class ZeroWalletSigner {
             sender: fromAddress
         }).then(({ tx, sender }) => {
             if (tx.from !== null) {
-                if (tx.from.toLowerCase() !== sender) {
+                if (tx.from!.toLowerCase() !== sender) {
                     logger.throwArgumentError(
                         'from address mismatch',
                         'transaction',
@@ -809,43 +812,46 @@ export class ZeroWalletSigner {
 
         // Send the transaction
 
-        const response = await axios.post(this.zeroWalletServerEndpoints.gasStation, {
-            execTransactionBody: safeTxBody,
-            zeroWalletAddress: this.scwAddress,
-            signature,
-            webHookAttributes,
-            gasTankName: this.gasTankName
-        });
+        const response = await axios.post(
+            this.zeroWalletServerEndpoints.gasStation,
+            {
+                execTransactionBody: safeTxBody,
+                zeroWalletAddress: this.scwAddress,
+                signature,
+                webHookAttributes,
+                gasTankName: this.gasTankName
+            }
+        );
 
         return {
             hash: response.data.txHash,
             confirmations: 1,
             from: scwAddress,
             wait: async () => {
-                return {    
-                    to: "string",
-                    from: "string",
-                    contractAddress: "string",
+                return {
+                    to: 'string',
+                    from: 'string',
+                    contractAddress: 'string',
                     transactionIndex: 1,
-                    gasUsed: ethers.BigNumber.from("1"),
-                    logsBloom: "string",
-                    blockHash: "string",
-                    transactionHash: "string",
+                    gasUsed: ethers.BigNumber.from('1'),
+                    logsBloom: 'string',
+                    blockHash: 'string',
+                    transactionHash: 'string',
                     logs: [],
                     blockNumber: 1,
                     confirmations: 1,
-                    cumulativeGasUsed: ethers.BigNumber.from("1"),
-                    effectiveGasPrice: ethers.BigNumber.from("1"),
+                    cumulativeGasUsed: ethers.BigNumber.from('1'),
+                    effectiveGasPrice: ethers.BigNumber.from('1'),
                     byzantium: true,
-                    type: 1,
-                }
+                    type: 1
+                };
             },
             nonce: 1,
-            gasLimit: ethers.BigNumber.from("1"),
-            data: "string",
-            value: ethers.BigNumber.from("1"),
-            chainId: 1,
-        }
+            gasLimit: ethers.BigNumber.from('1'),
+            data: 'string',
+            value: ethers.BigNumber.from('1'),
+            chainId: 1
+        };
     }
 
     async _signTypedData(
@@ -900,17 +906,16 @@ export class ZeroWalletSigner {
     async buildTransaction(
         tx: Deferrable<TransactionRequest>
     ): Promise<{ scwAddress: string; safeTxBody: BuildExecTransactionType }> {
-
         const nonce = await this.getNonce();
         const signedNonce = await this.signNonce(nonce);
-        
+
         const webHookAttributes = {
             nonce,
             signedNonce,
             to: tx.to,
             // eslint-disable-next-line camelcase
             chain_id: tx.chainId
-        }
+        };
 
         const { data } = tx;
 
@@ -945,33 +950,32 @@ export class ZeroWalletSigner {
     }
 
     async deployScw(): Promise<void> {
-
         const nonce = await this.getNonce();
         const signedNonce = await this.signNonce(nonce);
 
         const webHookAttributes: DeployWebHookAttributesType = {
             signedNonce: signedNonce,
-            nonce: nonce,
+            nonce: nonce
         };
 
-        await axios.post<string>(
-            this.zeroWalletServerEndpoints.scwDeployer,
-            {
-                zeroWalletAddress: this.zeroWallet.address,
-                gasTankName: this.gasTankName,
-                webHookAttributes
-            }
-        );
+        await axios.post<string>(this.zeroWalletServerEndpoints.scwDeployer, {
+            zeroWalletAddress: this.zeroWallet.address,
+            gasTankName: this.gasTankName,
+            webHookAttributes
+        });
     }
 
     async refreshNonce(): Promise<void> {
-        const response = await axios.post(this.zeroWalletServerEndpoints.nonceRefresher, {
-            zeroWalletAddress: this.zeroWallet.address,
-            gasTankName: this.gasTankName
-        })
+        const response = await axios.post(
+            this.zeroWalletServerEndpoints.nonceRefresher,
+            {
+                zeroWalletAddress: this.zeroWallet.address,
+                gasTankName: this.gasTankName
+            }
+        );
 
-        if(!response.data?.nonce) {
-            throw new Error('nonce is not refreshed')
+        if (!response.data?.nonce) {
+            throw new Error('nonce is not refreshed');
         }
 
         this.store.set('nonce', response.data.nonce);
@@ -981,6 +985,6 @@ export class ZeroWalletSigner {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async unlock(password: string): Promise<boolean> {
-        throw new Error('Not supported yet!');
+        throw new Error(`Not supported yet! ${password}`);
     }
 }

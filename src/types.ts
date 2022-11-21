@@ -1,11 +1,10 @@
-import { RecoveryMechanism } from 'recovery';
-import { IStoreable } from 'store/IStoreable';
+import { IStoreable } from './store/IStoreable';
 
 export type ZeroWalletConnectorOptions = {
     /** hex encoded ETH private key or raw binary */
     jsonRpcProviderUrl: string;
     store: string;
-    recoveryMechanism: RecoveryMechanism;
+    recoveryMechanism: string;
     zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
     gasTankName: string;
 };
@@ -19,7 +18,6 @@ export type ZeroWalletServerEndpoints = {
     gasStation: string;
     transactionBuilder: string;
     scwDeployer: string;
-
 };
 
 export type BuildExecTransactionType = {

@@ -4,9 +4,9 @@
 import { describe, expect, test } from '@jest/globals';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { BuildExecTransactionType, ZeroWalletServerEndpoints } from 'types';
 import { ZeroWalletProvider } from '../provider';
 import { StorageFactory } from '../store/storageFactory';
+import { BuildExecTransactionType, ZeroWalletServerEndpoints } from '../types';
 import { configEnv } from '../utils/env';
 
 configEnv();
@@ -254,7 +254,7 @@ describe('Test ZeroWalletSigner', () => {
         });
 
         await signer.deployScw();
-    })
+    });
 
     test('should try to deploy an SCW and fail', async () => {
         mockedAxios.post.mockImplementation((url: string) => {
@@ -264,7 +264,9 @@ describe('Test ZeroWalletSigner', () => {
 
             return Promise.reject(new Error('Not found'));
         });
-        
-       await expect(signer.deployScw()).rejects.toBe("You can't deploy an SCW");
-    })
+
+        await expect(signer.deployScw()).rejects.toBe(
+            "You can't deploy an SCW"
+        );
+    });
 });

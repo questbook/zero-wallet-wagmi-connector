@@ -5,6 +5,7 @@ const chainsNames = {
     42220: 'Celo'
 };
 
+// eslint-disable-next-line no-restricted-syntax
 enum SupportedChainId {
     CELO_MAINNET = 42220,
     GOERLI_TESTNET = 5,

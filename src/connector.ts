@@ -1,10 +1,10 @@
-import { SupportedChainId } from 'constants/chains';
 import { ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
-import { IStoreable } from 'store/IStoreable';
-import { StorageFactory } from 'store/storageFactory';
 import { Chain, Connector, ConnectorData } from 'wagmi';
-import { normalizeChainId } from 'utils/normalizeChainId';
+import { SupportedChainId } from './constants/chains';
+import { IStoreable } from './store/IStoreable';
+import { StorageFactory } from './store/storageFactory';
+import { normalizeChainId } from './utils/normalizeChainId';
 import { ZeroWalletProvider } from './provider';
 import { ZeroWalletSigner } from './signer';
 import { ZeroWalletConnectorOptions } from './types';

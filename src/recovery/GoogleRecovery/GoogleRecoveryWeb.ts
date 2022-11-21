@@ -50,6 +50,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
 
         const srcGsiPromise = loadGoogleScript(srcGsi).then(() => {
             const newToken = google.accounts.oauth2.initTokenClient({
+                // eslint-disable-next-line camelcase
                 client_id: this.options.googleClientId,
                 scope: SCOPES.join(' '),
                 callback: () => {}

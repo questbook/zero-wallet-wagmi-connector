@@ -5,14 +5,12 @@
 import { describe, test } from '@jest/globals';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { BuildExecTransactionType, ZeroWalletServerEndpoints } from 'types';
 import { SupportedChainId } from '../constants/chains';
 import { ZeroWalletProvider } from '../provider';
 import { ZeroWalletSigner } from '../signer';
 import { StorageFactory } from '../store/storageFactory';
+import { BuildExecTransactionType, ZeroWalletServerEndpoints } from '../types';
 import { configEnv } from '../utils/env';
-
-
 
 configEnv();
 
@@ -101,15 +99,15 @@ describe('Test ZeroWalletProvider methods', () => {
     });
 
     test('network is goerli', async () => {
-        const network = await provider.getNetwork()
+        const network = await provider.getNetwork();
         expect(network.chainId).toBe(5);
         expect(network.name).toBe('Goerli');
     });
 
     test('switch network to Polygon', async () => {
         const chain: SupportedChainId = SupportedChainId.POLYGON_MAINNET;
-        const newChain = await provider.switchNetwork(chain)
-        const newNetwork = await provider.getNetwork()
+        const newChain = await provider.switchNetwork(chain);
+        const newNetwork = await provider.getNetwork();
 
         expect(newChain.id).toBe(SupportedChainId.POLYGON_MAINNET);
         expect(newChain.name).toBe('Polygon');
@@ -123,5 +121,4 @@ describe('Test ZeroWalletProvider methods', () => {
         expect(signer).toBeTruthy();
         expect(signer).toBeInstanceOf(ZeroWalletSigner);
     });
-
 });
