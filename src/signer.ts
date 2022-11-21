@@ -914,7 +914,7 @@ export class ZeroWalletSigner {
             signedNonce,
             to: tx.to,
             // eslint-disable-next-line camelcase
-            chain_id: tx.chainId
+            chainId: tx.chainId
         };
 
         const { data } = tx;
