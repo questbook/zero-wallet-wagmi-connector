@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 import { Chain, Connector, ConnectorData } from 'wagmi';
 import { SupportedChainId } from './constants/chains';
@@ -56,7 +55,7 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async connect(): Promise<Required<ConnectorData>> {
-        if (this.store.get('ZeroWalletConnected') === 'true') {
+        if ((await this.store.get('ZeroWalletConnected')) === 'true') {
             throw new Error('Already connected!');
         }
 
@@ -69,29 +68,15 @@ export class ZeroWalletConnector extends Connector<
             provider.on('disconnect', this.onDisconnect);
         }
 
-        const privateKey = this.store.get('zeroWalletPrivateKey');
+        const signer = this.provider.getSigner();
+        await signer.initSignerPromise;
 
-        let newZeroWallet = ethers.Wallet.createRandom();
-
-        if (!privateKey) {
-            this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
-        } else {
-            try {
-                newZeroWallet = new ethers.Wallet(privateKey);
-            } catch {
-                this.store.set(
-                    'zeroWalletPrivateKey',
-                    newZeroWallet.privateKey
-                );
-            }
-        }
-
-        this.store.set('ZeroWalletConnected', 'true');
+        await this.store.set('ZeroWalletConnected', 'true');
 
         const chainId = await this.getChainId();
 
         return {
-            account: newZeroWallet.address,
+            account: await signer.getAddress(),
             chain: {
                 id: chainId,
                 unsupported: false
@@ -101,7 +86,7 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async disconnect(): Promise<void> {
-        if (this.store.get('ZeroWalletConnected') === 'false') {
+        if ((await this.store.get('ZeroWalletConnected')) === 'false') {
             throw new Error('Already disconnected!');
         }
 
@@ -112,7 +97,7 @@ export class ZeroWalletConnector extends Connector<
         provider.removeListener('chainChanged', this.onChainChanged);
         provider.removeListener('disconnect', this.onDisconnect);
 
-        this.store.set('ZeroWalletConnected', 'false');
+        await this.store.set('ZeroWalletConnected', 'false');
     }
 
     async getAccount(): Promise<string> {
@@ -136,8 +121,8 @@ export class ZeroWalletConnector extends Connector<
 
     async isAuthorized(): Promise<boolean> {
         return (
-            this.store.get('ZeroWalletConnected') === 'true' &&
-            this.store.get('zeroWalletPrivateKey') !== undefined
+            (await this.store.get('ZeroWalletConnected')) === 'true' &&
+            (await this.store.get('zeroWalletPrivateKey')) !== undefined
         );
     }
 
