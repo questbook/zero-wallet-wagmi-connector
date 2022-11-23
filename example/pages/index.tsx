@@ -1,10 +1,61 @@
 import Head from 'next/head';
-import Image from 'next/image';
-import styles from '../styles/Home.module.css';
+import { contractAbi, contractAddress } from '../src/constants/contract';
+import { defaultChains, useAccount, useConnect, useContract, useNetwork, useSigner } from 'wagmi'
+import { Button, useColorMode, Flex, Center } from '@chakra-ui/react'
+import { useEffect } from 'react';
+import { ZeroWalletConnector } from 'zero-wallet-wagmi-connector';
+
+
+const zeroWalletConnectorOptions = {
+    jsonRpcProviderUrl:
+        `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+    store: 'browser',
+    recoveryMechanism: 'google',
+    zeroWalletServerEndpoints: {
+        nonceProvider: process.env.NEXT_PUBLIC_NONCE_PROVIDER_ENDPOINT!,
+        nonceRefresher: process.env.NEXT_PUBLIC_NONCE_REFRESHER_ENDPOINT!,
+        authorizer: process.env.NEXT_PUBLIC_AUTHORIZER_ENDPOINT!,
+        gasStation: process.env.NEXT_PUBLIC_GAS_STATION_ENDPOINT!,
+        transactionBuilder: process.env.NEXT_PUBLIC_TRANSACTION_BUILDER_ENDPOINT!,
+        scwDeployer: process.env.NEXT_PUBLIC_SCW_DEPLOYER_ENDPOINT!
+    },
+    gasTankName: 'testGasTankName'
+}
+
+
+const connector = new ZeroWalletConnector({
+    chains: defaultChains,
+    options: zeroWalletConnectorOptions
+});
 
 export default function Home() {
+    const { address, isConnected } = useAccount();
+    const { data: signer, status } = useSigner()
+    const { connect } = useConnect();
+    const { chain } = useNetwork()
+    const { contract } = useContract({ addressOrName: contractAddress, contractInterface: contractAbi, signerOrProvider: signer });
+
+    const { setColorMode } = useColorMode()
+
+    const handleConnect = () => {
+        connect();
+    }
+
+    useEffect(() => {
+        setColorMode('dark')
+    }, [])
+
+    useEffect(() => {
+        console.log("INFO")
+        console.log('signer', signer)
+        console.log('account', address)
+        console.log('status', status)
+        console.log('isConnected', isConnected)
+        console.log('chain', chain)
+    }, [signer, address, status, isConnected, chain])
+
     return (
-        <div className={styles.container}>
+        <Flex justifyContent="center" alignItems={'center'} dir="c" h='100vh' w='100vw'>
             <Head>
                 <title>Create Next App</title>
                 <meta
@@ -14,25 +65,11 @@ export default function Home() {
                 <link rel="icon" href="/favicon.ico" />
             </Head>
 
-            <main className={styles.main}>10</main>
-
-            <footer className={styles.footer}>
-                <a
-                    href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Powered by{' '}
-                    <span className={styles.logo}>
-                        <Image
-                            src="/vercel.svg"
-                            alt="Vercel Logo"
-                            width={72}
-                            height={16}
-                        />
-                    </span>
-                </a>
-            </footer>
-        </div>
+            {!signer ? (
+                <Center>
+                    <Button onClick={handleConnect}>Connect</Button>
+                </Center>
+            ): null }
+        </Flex>
     );
 }
