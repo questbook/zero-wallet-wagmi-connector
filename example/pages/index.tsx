@@ -1,10 +1,74 @@
 import Head from 'next/head';
-import Image from 'next/image';
-import styles from '../styles/Home.module.css';
+import { contractAbi, contractAddress } from '../src/constants/contract';
+import { Connector, useAccount, useConnect, useContract, useNetwork, useSigner } from 'wagmi'
+import { Button, useColorMode, Flex, Center, Input, ButtonGroup, Box } from '@chakra-ui/react'
+import { useEffect, useState } from 'react';
+import { ZeroWalletSigner } from '../../lib/esm/signer';
 
 export default function Home() {
+
+    // state
+    const [newNumber, setNewNumber] = useState<string>('');
+    const [contractNumber, setContractNumber] = useState<number | null>(null);
+
+    // wagmi hooks
+    const { address, isConnected } = useAccount();
+    const { data: signer, status } = useSigner<ZeroWalletSigner>()
+    const { connect, connectors } = useConnect();
+    const { chain } = useNetwork()
+    const contract = useContract({ addressOrName: contractAddress, contractInterface: contractAbi, signerOrProvider: signer });
+
+    // chakra hooks
+    const { setColorMode } = useColorMode()
+    useEffect(() => {
+        setColorMode('dark')
+    }, [])
+
+    useEffect(() => {
+    }, [signer, address, status, isConnected, chain])
+
+    useEffect(() => {
+        const func = async () => {
+            if (signer && contract){
+                try{
+                    await signer.authorize()
+                }
+                catch{}
+                try{
+                    await signer.deployScw()
+                }
+                catch{}
+                const newContractNumber = await contract.value()
+                setContractNumber(parseInt(newContractNumber))
+            }
+        }
+        func()
+    }, [signer, contract])
+
+    const handleConnect = async (connector: Connector) => {
+        connect({ connector: connector });
+    }
+
+    const handleSetNumber = async () => {
+        if (!signer) return;
+        try{
+            await signer.authorize()
+        }
+        catch{}
+        try{
+            await signer.deployScw()
+        }
+        catch{}
+        try{
+            await signer.refreshNonce()
+        }
+        catch{}
+        const tx = await contract.set(parseInt(newNumber));
+        await tx?.wait();
+    }
+
     return (
-        <div className={styles.container}>
+        <Flex justifyContent="center" alignItems={'center'} dir="c" h='100vh' w='100vw'>
             <Head>
                 <title>Create Next App</title>
                 <meta
@@ -14,25 +78,28 @@ export default function Home() {
                 <link rel="icon" href="/favicon.ico" />
             </Head>
 
-            <main className={styles.main}>10</main>
+            {!signer ? (
+                <Center>
+                    <ButtonGroup>
+                        {connectors.map((connector, index) => (
+                            <Button key={index} onClick={() => handleConnect(connector)}>
+                                Connect {connector.name}
+                            </Button>
+                        ))}
+                    </ButtonGroup>
+                </Center>
+            ) : (
+                <Flex alignItems={'center'} dir="c" >
+                    <Box>
+                        {contractNumber}
+                    </Box>
+                    <Center gap={2}>
+                        <Input type={'number'} value={newNumber} onChange={(e) => setNewNumber(e.target.value)} />
+                        <Button onClick={handleSetNumber}>Set Number</Button>
+                    </Center>
 
-            <footer className={styles.footer}>
-                <a
-                    href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Powered by{' '}
-                    <span className={styles.logo}>
-                        <Image
-                            src="/vercel.svg"
-                            alt="Vercel Logo"
-                            width={72}
-                            height={16}
-                        />
-                    </span>
-                </a>
-            </footer>
-        </div>
+                </Flex>
+            )}
+        </Flex>
     );
 }

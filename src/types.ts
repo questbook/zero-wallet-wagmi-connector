@@ -51,3 +51,8 @@ export type SignedTransaction = {
     s: string;
     v: number;
 };
+
+export type BigNumberAPI = {
+    hex: string,
+    type: 'BigNumber',
+}

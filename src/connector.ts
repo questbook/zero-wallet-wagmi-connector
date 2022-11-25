@@ -24,11 +24,15 @@ export class ZeroWalletConnector extends Connector<
         options: ZeroWalletConnectorOptions;
     }) {
         super(config);
+        
         this.store = StorageFactory.create(config.options.store);
+
         const _chain =
             config?.chains && config.chains.length > 0
                 ? { chainId: config.chains[0].id, name: config.chains[0].name }
                 : { chainId: 1, name: 'Ethereum' };
+
+        
 
         this.provider = new ZeroWalletProvider(
             config.options.jsonRpcProviderUrl,
@@ -55,9 +59,9 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async connect(): Promise<Required<ConnectorData>> {
-        if ((await this.store.get('ZeroWalletConnected')) === 'true') {
-            throw new Error('Already connected!');
-        }
+        // if (this.store.get('ZeroWalletConnected') === 'true') {
+        //     throw new Error('Already connected!');
+        // }
 
         const provider = await this.getProvider();
         if (!provider) throw new Error('Provider not found');
@@ -70,6 +74,8 @@ export class ZeroWalletConnector extends Connector<
 
         const signer = this.provider.getSigner();
         await signer.initSignerPromise;
+        
+        this.emit('message', { type: 'connecting' })
 
         await this.store.set('ZeroWalletConnected', 'true');
 
@@ -86,9 +92,9 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async disconnect(): Promise<void> {
-        if ((await this.store.get('ZeroWalletConnected')) === 'false') {
-            throw new Error('Already disconnected!');
-        }
+        // if (this.store.get('ZeroWalletConnected') === 'false') {
+        //     throw new Error('Already disconnected!');
+        // }
 
         const provider = await this.getProvider();
         if (!provider?.removeListener) return;
