@@ -1,10 +1,10 @@
 import { getDefaultProvider } from 'ethers';
 import type { AppProps } from 'next/app';
-import { createClient, defaultChains, WagmiConfig, Chain, chain } from 'wagmi';
-// import '../styles/globals.css';
+import { createClient, WagmiConfig, chain } from 'wagmi';
 import { ZeroWalletConnector } from 'zero-wallet-wagmi-connector';
 import { ChakraProvider } from '@chakra-ui/react'
 import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+import { useEffect, useMemo, useState } from 'react';
 
 const zeroWalletConnectorOptions = {
     jsonRpcProviderUrl:
@@ -33,12 +33,11 @@ const connector = new ZeroWalletConnector({
 //     zeroWalletConnectorOptions.zeroWalletServerEndpoints,
 //     zeroWalletConnectorOptions.gasTankName)
 
-const connectorMM = new MetaMaskConnector()
-
+const provider = getDefaultProvider(chain.goerli.id)
 
 const client = createClient({
     autoConnect: false,
-    provider: getDefaultProvider(chain.goerli.id),
+    provider,
     connectors: [
         new MetaMaskConnector({
             chains: [chain.goerli],
@@ -46,6 +45,7 @@ const client = createClient({
                 shimDisconnect: true,
             },
         }),
+        connector
     ],
 });
 

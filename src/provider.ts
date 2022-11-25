@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ethers } from 'ethers';
 import { deepCopy, fetchJson } from 'ethers/lib/utils';
 import { Chain } from 'wagmi';
@@ -39,13 +40,14 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
         zeroWalletServerEndpoints: ZeroWalletServerEndpoints,
         gasTankName: string
     ) {
-        super(jsonRpcProviderUrl);
+        super(jsonRpcProviderUrl, network);
         this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
         this.store = store;
         this.zeroWalletNetwork = network;
         this.gasTankName = gasTankName;
     }
-
+    
+    // @ts-ignore
     getSigner(addressOrIndex?: string | number): ZeroWalletSigner {
         const googleRecoveryMechanismOptions: GoogleRecoveryMechanismOptions = {
             googleClientId: GOOGLE_CLEINT_ID,
@@ -64,7 +66,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             this.store,
             this.zeroWalletServerEndpoints,
             this.gasTankName,
-            addressOrIndex,
+            undefined,
             googleRecoveryWeb
         );
     }

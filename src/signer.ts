@@ -23,6 +23,7 @@ import { ZeroWalletProvider } from './provider';
 import { _constructorGuard } from './provider';
 import { RecoveryMechanism } from './recovery';
 import {
+    BigNumberAPI,
     BuildExecTransactionType,
     DeployWebHookAttributesType,
     WebHookAttributesType,
@@ -676,7 +677,7 @@ export class ZeroWalletSigner {
             throw new Error('Zero Wallet is not initialized yet');
         }
 
-        const { scwAddress, safeTxBody } = await this.buildTransaction(
+        const { scwAddress, safeTXBody } = await this.buildTransaction(
             transaction
         );
 
@@ -690,7 +691,7 @@ export class ZeroWalletSigner {
                 chainId: ethers.BigNumber.from(chainId)
             },
             EIP712_WALLET_TX_TYPE,
-            safeTxBody
+            safeTXBody
         );
 
         let newSignature = '0x';
@@ -793,13 +794,19 @@ export class ZeroWalletSigner {
     async sendTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<TransactionResponse> {
-        const { scwAddress, safeTxBody } = await this.buildTransaction(
-            transaction
+        
+        const transactionWithChainId = {
+            ...transaction, 
+            chainId: this.getProvider().zeroWalletNetwork.chainId
+        }
+
+        const { scwAddress, safeTXBody } = await this.buildTransaction(
+            transactionWithChainId
         );
 
         this.scwAddress = scwAddress;
 
-        const signature = await this.signTransaction(transaction);
+        const signature = await this.signTransaction(transactionWithChainId);
         const nonce = await this.getNonce();
         const signedNonce = await this.signNonce(nonce);
 
@@ -807,7 +814,7 @@ export class ZeroWalletSigner {
             signedNonce: signedNonce,
             nonce: nonce,
             to: (await transaction.to)!,
-            chainId: (await transaction.chainId)!
+            chainId: transactionWithChainId.chainId
         };
 
         // Send the transaction
@@ -815,7 +822,7 @@ export class ZeroWalletSigner {
         const response = await axios.post(
             this.zeroWalletServerEndpoints.gasStation,
             {
-                execTransactionBody: safeTxBody,
+                execTransactionBody: safeTXBody,
                 zeroWalletAddress: this.scwAddress,
                 signature,
                 webHookAttributes,
@@ -905,7 +912,7 @@ export class ZeroWalletSigner {
 
     async buildTransaction(
         tx: Deferrable<TransactionRequest>
-    ): Promise<{ scwAddress: string; safeTxBody: BuildExecTransactionType }> {
+    ): Promise<{ scwAddress: string; safeTXBody: BuildExecTransactionType }> {
         const nonce = await this.getNonce();
         const signedNonce = await this.signNonce(nonce);
 
@@ -920,7 +927,7 @@ export class ZeroWalletSigner {
         const { data } = tx;
 
         const response = await axios.post<{
-            safeTxBody: BuildExecTransactionType;
+            safeTXBody: BuildExecTransactionType & { nonce: BigNumberAPI };
             scwAddress: string;
         }>(this.zeroWalletServerEndpoints.transactionBuilder, {
             zeroWalletAddress: this.zeroWallet.address,
@@ -928,9 +935,10 @@ export class ZeroWalletSigner {
             webHookAttributes,
             gasTankName: this.gasTankName
         });
-        const { safeTxBody, scwAddress } = response.data;
+        const { safeTXBody, scwAddress } = response.data;
+        const safeTXBodyWithNonce: BuildExecTransactionType = { ...safeTXBody, nonce: parseInt(safeTXBody.nonce.hex, 16) };
 
-        return { safeTxBody, scwAddress };
+        return { safeTXBody: safeTXBodyWithNonce, scwAddress };
     }
 
     async authorize(): Promise<boolean> {

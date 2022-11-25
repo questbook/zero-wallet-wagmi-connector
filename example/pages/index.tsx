@@ -1,58 +1,71 @@
 import Head from 'next/head';
 import { contractAbi, contractAddress } from '../src/constants/contract';
-import { defaultChains, useAccount, useConnect, useContract, useNetwork, useSigner } from 'wagmi'
-import { Button, useColorMode, Flex, Center } from '@chakra-ui/react'
-import { useEffect } from 'react';
-import { ZeroWalletConnector } from 'zero-wallet-wagmi-connector';
-
-
-const zeroWalletConnectorOptions = {
-    jsonRpcProviderUrl:
-        `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-    store: 'browser',
-    recoveryMechanism: 'google',
-    zeroWalletServerEndpoints: {
-        nonceProvider: process.env.NEXT_PUBLIC_NONCE_PROVIDER_ENDPOINT!,
-        nonceRefresher: process.env.NEXT_PUBLIC_NONCE_REFRESHER_ENDPOINT!,
-        authorizer: process.env.NEXT_PUBLIC_AUTHORIZER_ENDPOINT!,
-        gasStation: process.env.NEXT_PUBLIC_GAS_STATION_ENDPOINT!,
-        transactionBuilder: process.env.NEXT_PUBLIC_TRANSACTION_BUILDER_ENDPOINT!,
-        scwDeployer: process.env.NEXT_PUBLIC_SCW_DEPLOYER_ENDPOINT!
-    },
-    gasTankName: 'testGasTankName'
-}
-
-
-const connector = new ZeroWalletConnector({
-    chains: defaultChains,
-    options: zeroWalletConnectorOptions
-});
+import { Connector, useAccount, useConnect, useContract, useNetwork, useSigner } from 'wagmi'
+import { Button, useColorMode, Flex, Center, Input, ButtonGroup, Box } from '@chakra-ui/react'
+import { useEffect, useState } from 'react';
+import { ZeroWalletSigner } from '../../lib/esm/signer';
 
 export default function Home() {
+
+    // state
+    const [newNumber, setNewNumber] = useState<string>('');
+    const [contractNumber, setContractNumber] = useState<number | null>(null);
+
+    // wagmi hooks
     const { address, isConnected } = useAccount();
-    const { data: signer, status } = useSigner()
-    const { connect } = useConnect();
+    const { data: signer, status } = useSigner<ZeroWalletSigner>()
+    const { connect, connectors } = useConnect();
     const { chain } = useNetwork()
-    const { contract } = useContract({ addressOrName: contractAddress, contractInterface: contractAbi, signerOrProvider: signer });
+    const contract = useContract({ addressOrName: contractAddress, contractInterface: contractAbi, signerOrProvider: signer });
 
+    // chakra hooks
     const { setColorMode } = useColorMode()
-
-    const handleConnect = () => {
-        connect();
-    }
-
     useEffect(() => {
         setColorMode('dark')
     }, [])
 
     useEffect(() => {
-        console.log("INFO")
-        console.log('signer', signer)
-        console.log('account', address)
-        console.log('status', status)
-        console.log('isConnected', isConnected)
-        console.log('chain', chain)
     }, [signer, address, status, isConnected, chain])
+
+    useEffect(() => {
+        const func = async () => {
+            if (signer && contract){
+                try{
+                    await signer.authorize()
+                }
+                catch{}
+                try{
+                    await signer.deployScw()
+                }
+                catch{}
+                const newContractNumber = await contract.value()
+                setContractNumber(parseInt(newContractNumber))
+            }
+        }
+        func()
+    }, [signer, contract])
+
+    const handleConnect = async (connector: Connector) => {
+        connect({ connector: connector });
+    }
+
+    const handleSetNumber = async () => {
+        if (!signer) return;
+        try{
+            await signer.authorize()
+        }
+        catch{}
+        try{
+            await signer.deployScw()
+        }
+        catch{}
+        try{
+            await signer.refreshNonce()
+        }
+        catch{}
+        const tx = await contract.set(parseInt(newNumber));
+        await tx?.wait();
+    }
 
     return (
         <Flex justifyContent="center" alignItems={'center'} dir="c" h='100vh' w='100vw'>
@@ -67,9 +80,26 @@ export default function Home() {
 
             {!signer ? (
                 <Center>
-                    <Button onClick={handleConnect}>Connect</Button>
+                    <ButtonGroup>
+                        {connectors.map((connector, index) => (
+                            <Button key={index} onClick={() => handleConnect(connector)}>
+                                Connect {connector.name}
+                            </Button>
+                        ))}
+                    </ButtonGroup>
                 </Center>
-            ): null }
+            ) : (
+                <Flex alignItems={'center'} dir="c" >
+                    <Box>
+                        {contractNumber}
+                    </Box>
+                    <Center gap={2}>
+                        <Input type={'number'} value={newNumber} onChange={(e) => setNewNumber(e.target.value)} />
+                        <Button onClick={handleSetNumber}>Set Number</Button>
+                    </Center>
+
+                </Flex>
+            )}
         </Flex>
     );
 }
