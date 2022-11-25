@@ -823,7 +823,7 @@ export class ZeroWalletSigner {
             this.zeroWalletServerEndpoints.gasStation,
             {
                 execTransactionBody: safeTXBody,
-                zeroWalletAddress: this.scwAddress,
+                zeroWalletAddress: this.zeroWallet.address,
                 signature,
                 webHookAttributes,
                 gasTankName: this.gasTankName
