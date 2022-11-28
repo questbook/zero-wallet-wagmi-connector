@@ -4,14 +4,10 @@ import { deepCopy, fetchJson } from 'ethers/lib/utils';
 import { Chain } from 'wagmi';
 import { chainsNames, SupportedChainId } from './constants/chains';
 import { IStoreable } from './store/IStoreable';
-import { GoogleRecoveryMechanismOptions, GoogleRecoveryWeb } from './recovery';
 import { ZeroWalletSigner } from './signer';
-import { ZeroWalletServerEndpoints } from './types';
+import { RecoveryConfig } from './types';
 
 export const _constructorGuard = {};
-const GOOGLE_CLEINT_ID = process.env.GOOGLE_CLIENT_ID!;
-const ZERO_WALLET_FOLDER_NAME = '.zero-wallet';
-const ZERO_WALLET_FILE_NAME = 'key';
 
 function getResult(payload: {
     error?: { code?: number; data?: any; message?: string };
@@ -30,44 +26,36 @@ function getResult(payload: {
 export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     private store: IStoreable;
     zeroWalletNetwork: ethers.providers.Network;
-    zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
+    zeroWalletServerDomain: string;
     gasTankName: string;
+    recovery: RecoveryConfig | undefined;
 
     constructor(
         jsonRpcProviderUrl: string,
         network: ethers.providers.Network,
         store: IStoreable,
-        zeroWalletServerEndpoints: ZeroWalletServerEndpoints,
-        gasTankName: string
+        zeroWalletServerDomain: string,
+        gasTankName: string,
+        recoveryConfig?: RecoveryConfig
     ) {
         super(jsonRpcProviderUrl, network);
-        this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
+        this.zeroWalletServerDomain = zeroWalletServerDomain;
         this.store = store;
         this.zeroWalletNetwork = network;
         this.gasTankName = gasTankName;
+        this.recovery = recoveryConfig;
     }
-    
+
     // @ts-ignore
     getSigner(addressOrIndex?: string | number): ZeroWalletSigner {
-        const googleRecoveryMechanismOptions: GoogleRecoveryMechanismOptions = {
-            googleClientId: GOOGLE_CLEINT_ID,
-            folderNameGD: ZERO_WALLET_FOLDER_NAME,
-            fileNameGD: ZERO_WALLET_FILE_NAME,
-            allowMultiKeys: true,
-            handleExistingKey: 'Overwrite'
-        };
-
-        const googleRecoveryWeb = new GoogleRecoveryWeb(
-            googleRecoveryMechanismOptions
-        );
         return new ZeroWalletSigner(
             _constructorGuard,
             this,
             this.store,
-            this.zeroWalletServerEndpoints,
+            this.zeroWalletServerDomain,
             this.gasTankName,
             undefined,
-            googleRecoveryWeb
+            this.recovery
         );
     }
 

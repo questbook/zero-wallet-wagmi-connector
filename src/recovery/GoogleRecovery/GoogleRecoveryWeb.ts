@@ -10,6 +10,8 @@ import {
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const RANDOM_STRING_LENGTH = 50;
+const ZERO_WALLET_FOLDER_NAME = '.zero-wallet';
+const ZERO_WALLET_FILE_NAME = 'key';
 
 export default class GoogleRecoveryWeb implements RecoveryMechanism {
     options: GoogleRecoveryMechanismOptions;
@@ -17,6 +19,8 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
     _tokenClient: any;
     _isGapiReady: boolean;
     _isGsiReady: boolean;
+    folderNameGD: string;
+    fileNameGD: string;
 
     constructor(options: GoogleRecoveryMechanismOptions) {
         this.options = options;
@@ -24,6 +28,8 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
         this._recoveryReadyPromise = this._init();
         this._isGapiReady = false;
         this._isGsiReady = false;
+        this.folderNameGD = this.folderNameGD || ZERO_WALLET_FOLDER_NAME;
+        this.fileNameGD = this.fileNameGD || ZERO_WALLET_FILE_NAME;
     }
 
     async _getGapiPromise(srcGapi: string): Promise<void> {
@@ -110,7 +116,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
      */
     async _getFilteredFolders(): Promise<gapi.client.drive.File[]> {
         // Retrieving folders from gapi.
-        const folderQuerySelector: string = `mimeType=\'application/vnd.google-apps.folder\' and name contains \'${this.options.folderNameGD}\' and \'root\' in parents and trashed = false`;
+        const folderQuerySelector: string = `mimeType=\'application/vnd.google-apps.folder\' and name contains \'${this.folderNameGD}\' and \'root\' in parents and trashed = false`;
         const folderQueryResponse = await gapi.client.drive.files.list({
             q: folderQuerySelector,
             spaces: 'drive'
@@ -120,7 +126,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
         const folders = folderQueryResponse.result.files?.filter((folder) => {
             return (
                 folder.name?.length ===
-                this.options.folderNameGD.length + RANDOM_STRING_LENGTH
+                this.folderNameGD.length + RANDOM_STRING_LENGTH
             );
         });
         if (!folders?.length) return [];
@@ -143,13 +149,13 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
     ): Promise<gapi.client.drive.File[]> {
         let keyFileQuerySelector: string;
         if (!this.options.allowMultiKeys)
-            keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name=\'${this.options.fileNameGD}\' and trashed = false`;
+            keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name=\'${this.fileNameGD}\' and trashed = false`;
         else {
             if (typeof keyId === 'undefined')
-                keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name contains \'${this.options.fileNameGD}\' and trashed = false`;
+                keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name contains \'${this.fileNameGD}\' and trashed = false`;
             else
                 keyFileQuerySelector = `mimeType!=\'application/vnd.google-apps.folder\' and \'${folderId}\' in parents and name =\'${
-                    this.options.fileNameGD + keyId.toString()
+                    this.fileNameGD + keyId.toString()
                 }\' and trashed = false`;
         }
 
@@ -161,7 +167,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
 
         if (this.options.allowMultiKeys && typeof keyId === 'undefined') {
             // The key file name length should be larger than fileNameGD's fileNameGD.length.
-            const baseKeyFileLength = this.options.fileNameGD.length;
+            const baseKeyFileLength = this.fileNameGD.length;
             result = result?.filter((file) => {
                 return _isNumber(file.name!.slice(baseKeyFileLength));
             });
@@ -206,7 +212,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
 
     async _createFolder(): Promise<gapi.client.drive.File> {
         const formattedFolderName =
-            this.options.folderNameGD + getRandomString(RANDOM_STRING_LENGTH);
+            this.folderNameGD + getRandomString(RANDOM_STRING_LENGTH);
         const folderMetadata: gapi.client.drive.File = {
             name: formattedFolderName,
             mimeType: 'application/vnd.google-apps.folder'
@@ -223,11 +229,11 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
         keyFilesInFolder: gapi.client.drive.File[]
     ): Promise<string> {
         if (!this.options.allowMultiKeys) {
-            return this.options.fileNameGD;
+            return this.fileNameGD;
         }
 
         let maxExistingNumber = 0;
-        const baseKeyFileLength = this.options.fileNameGD.length;
+        const baseKeyFileLength = this.fileNameGD.length;
         keyFilesInFolder.forEach((keyFile) => {
             try {
                 const keyFileNumber = +keyFile.name!.slice(baseKeyFileLength);
@@ -238,7 +244,7 @@ export default class GoogleRecoveryWeb implements RecoveryMechanism {
         });
         maxExistingNumber++;
         const formatedKeyFileName =
-            this.options.fileNameGD + maxExistingNumber.toString();
+            this.fileNameGD + maxExistingNumber.toString();
         return formatedKeyFileName;
     }
 

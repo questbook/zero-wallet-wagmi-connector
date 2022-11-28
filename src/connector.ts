@@ -17,6 +17,7 @@ export class ZeroWalletConnector extends Connector<
     readonly name = 'Zero Wallet';
 
     private provider: ZeroWalletProvider;
+    private providers: { [key in SupportedChainId]?: ZeroWalletProvider } = {};
     private store: IStoreable;
 
     constructor(config: {
@@ -24,23 +25,25 @@ export class ZeroWalletConnector extends Connector<
         options: ZeroWalletConnectorOptions;
     }) {
         super(config);
-        
+
         this.store = StorageFactory.create(config.options.store);
 
-        const _chain =
-            config?.chains && config.chains.length > 0
-                ? { chainId: config.chains[0].id, name: config.chains[0].name }
-                : { chainId: 1, name: 'Ethereum' };
+        config.chains?.forEach((chain) => {
+            if (chain) {
+                const provider = (this.provider = new ZeroWalletProvider(
+                    this.options.jsonRpcProviderUrls[chain.id],
+                    { chainId: chain.id, name: chain.name },
+                    this.store,
+                    this.options.zeroWalletServerDomain,
+                    this.options.gasTankName,
+                    config.options.recovery
+                ));
 
-        
+                this.providers[chain.id] = provider;
 
-        this.provider = new ZeroWalletProvider(
-            config.options.jsonRpcProviderUrl,
-            _chain,
-            this.store,
-            config.options.zeroWalletServerEndpoints,
-            config.options.gasTankName
-        );
+                if (!this.provider) this.provider = this.providers[chain.id];
+            }
+        });
     }
 
     /**
@@ -76,6 +79,7 @@ export class ZeroWalletConnector extends Connector<
         await signer.initSignerPromise;
         
         this.emit('message', { type: 'connecting' })
+
 
         await this.store.set('ZeroWalletConnected', 'true');
 
@@ -133,7 +137,15 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async switchChain(chainId: SupportedChainId): Promise<Chain> {
-        return await this.provider.switchNetwork(chainId);
+        if (
+            !(chainId in this.providers) ||
+            this.providers[chainId] === undefined
+        ) {
+            throw new Error('No provider found for chainId: ' + chainId);
+        }
+
+        this.provider = this.providers[chainId]!;
+        return this.provider.switchNetwork(chainId);
     }
 
     protected onAccountsChanged(accounts: string[]) {
