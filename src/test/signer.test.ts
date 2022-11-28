@@ -6,7 +6,11 @@ import axios from 'axios';
 import { BigNumber, ethers } from 'ethers';
 import { ZeroWalletProvider } from '../provider';
 import { StorageFactory } from '../store/storageFactory';
-import { BigNumberAPI, BuildExecTransactionType, ZeroWalletServerEndpoints } from '../types';
+import {
+    BigNumberAPI,
+    BuildExecTransactionType,
+    ZeroWalletServerEndpoints
+} from '../types';
 import { configEnv } from '../utils/env';
 
 configEnv();
@@ -14,7 +18,7 @@ configEnv();
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-const zeroWalletServerDomain = 'zeroWalletServerDomain'
+const zeroWalletServerDomain = 'zeroWalletServerDomain';
 
 const zeroWalletServerEndpoints: ZeroWalletServerEndpoints = {
     nonceProvider: zeroWalletServerDomain + '/api/auth/getNonce', // data: { nonce: string }
@@ -73,7 +77,9 @@ describe('Test ZeroWalletSigner', () => {
     ];
     const mockContractAddress = '0xA119f2120E82380DC89832B8F3740fDC47b0444f';
 
-    const safeTXBodyAPI: Omit<BuildExecTransactionType, 'nonce'> & { nonce: BigNumberAPI } = {
+    const safeTXBodyAPI: Omit<BuildExecTransactionType, 'nonce'> & {
+        nonce: BigNumberAPI;
+    } = {
         to: '0x8A14b1e068773bAeB342299576cE4b94e79d5d18',
         value: 0,
         data: '0x12',

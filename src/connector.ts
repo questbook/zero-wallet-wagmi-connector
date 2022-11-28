@@ -30,24 +30,21 @@ export class ZeroWalletConnector extends Connector<
         this.store = StorageFactory.create(config.options.store);
 
         config.chains?.forEach((chain) => {
-
-            if(chain){
-                const provider = this.provider = new ZeroWalletProvider(
+            if (chain) {
+                const provider = (this.provider = new ZeroWalletProvider(
                     this.options.jsonRpcProviderUrls[chain.id],
                     { chainId: chain.id, name: chain.name },
                     this.store,
                     this.options.zeroWalletServerDomain,
                     this.options.gasTankName,
                     config.options.recovery
-                );
+                ));
 
                 this.providers[chain.id] = provider;
-                
-                if(!this.provider)
-                    this.provider = this.providers[chain.id];
+
+                if (!this.provider) this.provider = this.providers[chain.id];
             }
-        })
-        
+        });
     }
 
     /**
@@ -154,12 +151,15 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async switchChain(chainId: SupportedChainId): Promise<Chain> {
-        if(!(chainId in this.providers) || this.providers[chainId] === undefined){
-            throw new Error("No provider found for chainId: " + chainId);
+        if (
+            !(chainId in this.providers) ||
+            this.providers[chainId] === undefined
+        ) {
+            throw new Error('No provider found for chainId: ' + chainId);
         }
 
         this.provider = this.providers[chainId]!;
-        return this.provider.switchNetwork(chainId) ;
+        return this.provider.switchNetwork(chainId);
     }
 
     protected onAccountsChanged(accounts: string[]) {

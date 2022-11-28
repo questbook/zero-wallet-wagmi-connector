@@ -292,9 +292,9 @@ export class ZeroWalletSigner {
             authorizer: zeroWalletServerDomain + '/api/auth/authorize',
             gasStation: zeroWalletServerDomain + '/api/tx/send',
             transactionBuilder: zeroWalletServerDomain + '/api/tx/build',
-            scwDeployer: zeroWalletServerDomain + '/api/tx/deploy',
-        }
-        
+            scwDeployer: zeroWalletServerDomain + '/api/tx/deploy'
+        };
+
         this.store = store;
         this.provider = provider;
         // defineReadOnly(this, "provider", provider);
@@ -974,7 +974,9 @@ export class ZeroWalletSigner {
         const { data } = tx;
 
         const response = await axios.post<{
-            safeTXBody: Omit<BuildExecTransactionType, 'nonce'>  & { nonce: BigNumberAPI };
+            safeTXBody: Omit<BuildExecTransactionType, 'nonce'> & {
+                nonce: BigNumberAPI;
+            };
             scwAddress: string;
         }>(this.zeroWalletServerEndpoints.transactionBuilder, {
             zeroWalletAddress: this.zeroWallet.address,
