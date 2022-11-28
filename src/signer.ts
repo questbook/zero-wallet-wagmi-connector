@@ -21,11 +21,12 @@ import {
 import { IStoreable } from './store/IStoreable';
 import { ZeroWalletProvider } from './provider';
 import { _constructorGuard } from './provider';
-import { RecoveryMechanism } from './recovery';
+import { GoogleRecoveryWeb, RecoveryMechanism } from './recovery';
 import {
     BigNumberAPI,
     BuildExecTransactionType,
     DeployWebHookAttributesType,
+    RecoveryConfig,
     WebHookAttributesType,
     ZeroWalletServerEndpoints
 } from './types';
@@ -253,9 +254,10 @@ export class ZeroWalletSigner {
 
     readonly provider: ZeroWalletProvider;
     readonly _isSigner: boolean;
+    readonly recoveryReadyPromise: Promise<void> | null;
 
-    zeroWallet: ethers.Wallet;
-    recoveryMechansim: RecoveryMechanism | undefined;
+    private zeroWallet: ethers.Wallet;
+    private recoveryMechansim: RecoveryMechanism | null;
 
     // @ts-ignore
     _index: number;
@@ -274,7 +276,7 @@ export class ZeroWalletSigner {
         zeroWalletServerDomain: string,
         gasTankName: string,
         addressOrIndex?: string | number,
-        recoveryMechansim?: RecoveryMechanism
+        recoveryConfig?: RecoveryConfig
     ) {
         if (constructorGuard !== _constructorGuard) {
             throw new Error(
@@ -331,8 +333,45 @@ export class ZeroWalletSigner {
             );
         }
 
-        this.recoveryMechansim = recoveryMechansim;
+        if (recoveryConfig) {
+            const { type, ...config } = recoveryConfig;
+
+            switch (type) {
+                case 'google-web-recovery':
+                    this.recoveryMechansim = new GoogleRecoveryWeb(config);
+                    this.recoveryReadyPromise =
+                        this.recoveryMechansim.recoveryReadyPromise();
+                    break;
+                default:
+                    break;
+            }
+        }
+
         this._isSigner = true;
+    }
+
+    async initiateRecovery(keyId?: number): Promise<void> {
+        if (!this.recoveryMechansim) {
+            throw new Error('No recovery mechanism found');
+        }
+
+        const { privateKey } = await this.recoveryMechansim.initiateRecovery(
+            keyId
+        );
+
+        this.zeroWallet = new ethers.Wallet(privateKey);
+        this.zeroWallet = this.zeroWallet.connect(this.provider);
+
+        this.store.set('zeroWalletPrivateKey', privateKey);
+        this.store.set('nonce', '');
+    }
+
+    async setupRecovery(): Promise<void> {
+        if (!this.recoveryMechansim) {
+            throw new Error('No recovery mechanism found');
+        }
+
+        await this.recoveryMechansim.setupRecovery(this.zeroWallet);
     }
 
     async populateTransaction(
@@ -621,7 +660,7 @@ export class ZeroWalletSigner {
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     connect(provider: ethers.providers.JsonRpcProvider): ZeroWalletSigner {
-        provider
+        provider;
         return logger.throwError(
             'cannot alter JSON-RPC Signer connection',
             Logger.errors.UNSUPPORTED_OPERATION,
@@ -803,11 +842,10 @@ export class ZeroWalletSigner {
     async sendTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<TransactionResponse> {
-        
         const transactionWithChainId = {
-            ...transaction, 
+            ...transaction,
             chainId: this.getProvider().zeroWalletNetwork.chainId
-        }
+        };
 
         const { scwAddress, safeTXBody } = await this.buildTransaction(
             transactionWithChainId
@@ -936,7 +974,7 @@ export class ZeroWalletSigner {
         const { data } = tx;
 
         const response = await axios.post<{
-            safeTXBody: BuildExecTransactionType & { nonce: BigNumberAPI };
+            safeTXBody: Omit<BuildExecTransactionType, 'nonce'>  & { nonce: BigNumberAPI };
             scwAddress: string;
         }>(this.zeroWalletServerEndpoints.transactionBuilder, {
             zeroWalletAddress: this.zeroWallet.address,
@@ -945,7 +983,10 @@ export class ZeroWalletSigner {
             gasTankName: this.gasTankName
         });
         const { safeTXBody, scwAddress } = response.data;
-        const safeTXBodyWithNonce: BuildExecTransactionType = { ...safeTXBody, nonce: parseInt(safeTXBody.nonce.hex, 16) };
+        const safeTXBodyWithNonce: BuildExecTransactionType = {
+            ...safeTXBody,
+            nonce: parseInt(safeTXBody.nonce.hex, 16)
+        };
 
         return { safeTXBody: safeTXBodyWithNonce, scwAddress };
     }

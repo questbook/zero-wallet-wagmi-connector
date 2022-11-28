@@ -26,7 +26,7 @@ export class ZeroWalletConnector extends Connector<
         options: ZeroWalletConnectorOptions;
     }) {
         super(config);
-        
+
         this.store = StorageFactory.create(config.options.store);
 
         config.chains?.forEach((chain) => {
@@ -37,7 +37,8 @@ export class ZeroWalletConnector extends Connector<
                     { chainId: chain.id, name: chain.name },
                     this.store,
                     this.options.zeroWalletServerDomain,
-                    this.options.gasTankName
+                    this.options.gasTankName,
+                    config.options.recovery
                 );
 
                 this.providers[chain.id] = provider;
@@ -78,7 +79,7 @@ export class ZeroWalletConnector extends Connector<
             provider.on('disconnect', this.onDisconnect);
         }
 
-        this.emit('message', { type: 'connecting' })
+        this.emit('message', { type: 'connecting' });
 
         const privateKey = this.store.get('zeroWalletPrivateKey');
 

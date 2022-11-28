@@ -1,8 +1,8 @@
 interface GoogleRecoveryMechanismOptions {
     // Basic options
     googleClientId: string;
-    folderNameGD: string;
-    fileNameGD: string;
+    folderNameGD?: string;
+    fileNameGD?: string;
 
     // Options handling multi key case.
     // TODO add more options maybe?

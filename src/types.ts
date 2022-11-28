@@ -1,12 +1,17 @@
 import { SupportedChainId } from './constants/chains';
 import { IStoreable } from './store/IStoreable';
+import type { GoogleRecoveryMechanismOptions } from './recovery';
+
+export type GoogleWebRecoveryConnectorOptions =
+    GoogleRecoveryMechanismOptions & { type: 'google-web-recovery' };
+export type RecoveryConfig = GoogleWebRecoveryConnectorOptions;
 
 export type ZeroWalletConnectorOptions = {
     jsonRpcProviderUrls: JsonRpcProviderUrls;
     store: string;
-    recoveryMechanism: string;
     zeroWalletServerDomain: string;
     gasTankName: string;
+    recovery?: RecoveryConfig;
 };
 
 export type JsonRpcProviderUrls = {
@@ -57,6 +62,6 @@ export type SignedTransaction = {
 };
 
 export type BigNumberAPI = {
-    hex: string,
-    type: 'BigNumber',
-}
+    hex: string;
+    type: 'BigNumber';
+};

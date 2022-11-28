@@ -30,12 +30,12 @@ const client = createClient({
     autoConnect: false,
     provider,
     connectors: [
-        new MetaMaskConnector({
-            chains: [chain.goerli],
-            options: {
-                shimDisconnect: true,
-            },
-        }),
+        // new MetaMaskConnector({
+        //     chains: [chain.goerli],
+        //     options: {
+        //         shimDisconnect: true,
+        //     },
+        // }),
         connector
     ],
 });

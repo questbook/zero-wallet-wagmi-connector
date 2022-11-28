@@ -1,74 +1,144 @@
-import Head from 'next/head';
-import { contractAbi, contractAddress } from '../src/constants/contract';
-import { Connector, useAccount, useConnect, useContract, useNetwork, useSigner } from 'wagmi'
-import { Button, useColorMode, Flex, Center, Input, ButtonGroup, Box } from '@chakra-ui/react'
 import { useEffect, useState } from 'react';
-import { ZeroWalletSigner } from '../../lib/esm/signer';
+import {
+    Box,
+    Button,
+    ButtonGroup,
+    Flex,
+    Input,
+    useColorMode} from '@chakra-ui/react';
+import Head from 'next/head';
+import {
+    Connector,
+    useConnect,
+    useContract,
+    useSigner
+} from 'wagmi';
+import { ZeroWalletSigner } from 'zero-wallet-wagmi-connector';
+import { contractAbi, contractAddress } from '../src/constants/contract';
 
 export default function Home() {
-
     // state
     const [newNumber, setNewNumber] = useState<string>('');
     const [contractNumber, setContractNumber] = useState<number | null>(null);
 
     // wagmi hooks
-    const { address, isConnected } = useAccount();
-    const { data: signer, status } = useSigner<ZeroWalletSigner>()
+    const { data: signer } = useSigner<ZeroWalletSigner>();
     const { connect, connectors } = useConnect();
-    const { chain } = useNetwork()
-    const contract = useContract({ addressOrName: contractAddress, contractInterface: contractAbi, signerOrProvider: signer });
+    const contract = useContract({
+        addressOrName: contractAddress,
+        contractInterface: contractAbi,
+        signerOrProvider: signer
+    });
+
+    // recovery
+    const [inited, setInited] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // chakra hooks
-    const { setColorMode } = useColorMode()
+    const { setColorMode } = useColorMode();
     useEffect(() => {
-        setColorMode('dark')
-    }, [])
-
-    useEffect(() => {
-    }, [signer, address, status, isConnected, chain])
+        setColorMode('dark');
+    // @ts-ignore
+    }, []);
 
     useEffect(() => {
         const func = async () => {
-            if (signer && contract){
-                try{
-                    await signer.authorize()
-                }
-                catch{}
-                try{
-                    await signer.deployScw()
-                }
-                catch{}
-                const newContractNumber = await contract.value()
-                setContractNumber(parseInt(newContractNumber))
+            if (signer && contract) {
+                try {
+                    await signer.authorize();
+                } catch {}
+
+                try {
+                    await signer.deployScw();
+                } catch {}
+
+                const newContractNumber = await contract.value();
+                setContractNumber(parseInt(newContractNumber));
+                signer.recoveryReadyPromise?.then(() => {
+                    setInited(true);
+                });
             }
-        }
-        func()
-    }, [signer, contract])
+        };
+
+        func();
+    }, [signer, contract]);
 
     const handleConnect = async (connector: Connector) => {
         connect({ connector: connector });
-    }
+    };
 
     const handleSetNumber = async () => {
         if (!signer) return;
-        try{
-            await signer.authorize()
-        }
-        catch{}
-        try{
-            await signer.deployScw()
-        }
-        catch{}
-        try{
-            await signer.refreshNonce()
-        }
-        catch{}
+        try {
+            await signer.authorize();
+        } catch {}
+
+        try {
+            await signer.deployScw();
+        } catch {}
+
+        try {
+            await signer.refreshNonce();
+        } catch {}
+
         const tx = await contract.set(parseInt(newNumber));
         await tx?.wait();
-    }
+    };
+
+    const handleGDExport = async () => {
+        if (loading) throw Error('Loading import or export');
+        if (!signer) throw Error('No signer');
+        if (!inited) throw Error('Recovery not inited');
+        setLoading(true);
+
+        try {
+            await signer.setupRecovery();
+            console.log('Export successful');
+        } catch (err) {
+            let errorMessage = 'unknown';
+            if (typeof err === 'string') {
+                errorMessage = err.toUpperCase();
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            console.log('Export Error Message:', errorMessage);
+        }
+
+        setLoading(false);
+    };
+
+    const handleGDImport = async () => {
+        if (loading) throw Error('Loading import or export');
+        if (!signer) throw Error('No signer');
+        if (!inited) throw Error('Recovery not inited');
+        setLoading(true);
+
+        try {
+            await signer?.initiateRecovery();
+            console.log('Import successful');
+        } catch (err) {
+            let errorMessage = 'unknown';
+            if (typeof err === 'string') {
+                errorMessage = err.toUpperCase();
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            console.log('Import Error Message:', errorMessage);
+        }
+
+        setLoading(false);
+    };
 
     return (
-        <Flex justifyContent="center" alignItems={'center'} dir="c" h='100vh' w='100vw'>
+        <Flex
+            justifyContent="center"
+            alignItems="center"
+            dir="c"
+            h="100vh"
+            w="100vw"
+        >
             <Head>
                 <title>Create Next App</title>
                 <meta
@@ -79,25 +149,55 @@ export default function Home() {
             </Head>
 
             {!signer ? (
-                <Center>
-                    <ButtonGroup>
-                        {connectors.map((connector, index) => (
-                            <Button key={index} onClick={() => handleConnect(connector)}>
-                                Connect {connector.name}
-                            </Button>
-                        ))}
-                    </ButtonGroup>
-                </Center>
+                <ButtonGroup>
+                    {connectors.map((connector, index) => (
+                        <Button
+                            key={index}
+                            onClick={() => handleConnect(connector)}
+                        >
+                            Connect {connector.name}
+                        </Button>
+                    ))}
+                </ButtonGroup>
             ) : (
-                <Flex alignItems={'center'} dir="c" >
+                <Flex alignItems="center" direction="column" gap={5}>
                     <Box>
-                        {contractNumber}
+                        Storage value:{' '}
+                        {contractNumber ? contractNumber : 'loading...'}
                     </Box>
-                    <Center gap={2}>
-                        <Input type={'number'} value={newNumber} onChange={(e) => setNewNumber(e.target.value)} />
-                        <Button onClick={handleSetNumber}>Set Number</Button>
-                    </Center>
+                    <Flex gap={2}>
+                        <Input
+                            type="number"
+                            value={newNumber}
+                            onChange={(e) => setNewNumber(e.target.value)}
+                        />
+                        <Button onClick={handleSetNumber} padding="5">
+                            Set Number
+                        </Button>
+                    </Flex>
 
+                    <Flex>
+                        <ButtonGroup
+                            mt="10"
+                            gap="10"
+                            visibility={inited ? 'visible' : 'hidden'}
+                        >
+                            <Button
+                                onClick={handleGDImport}
+                                isLoading={loading}
+                                p="10"
+                            >
+                                Initiate Recovery
+                            </Button>
+                            <Button
+                                onClick={handleGDExport}
+                                isLoading={loading}
+                                p="10"
+                            >
+                                Setup Recovery
+                            </Button>
+                        </ButtonGroup>
+                    </Flex>
                 </Flex>
             )}
         </Flex>
