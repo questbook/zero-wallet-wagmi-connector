@@ -2,7 +2,6 @@ import { SupportedChainId } from './constants/chains';
 import { IStoreable } from './store/IStoreable';
 
 export type ZeroWalletConnectorOptions = {
-    /** hex encoded ETH private key or raw binary */
     jsonRpcProviderUrls: JsonRpcProviderUrls;
     store: string;
     recoveryMechanism: string;
