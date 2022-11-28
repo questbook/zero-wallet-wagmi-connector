@@ -4,11 +4,14 @@ import { createClient, WagmiConfig, chain } from 'wagmi';
 import { ZeroWalletConnector } from 'zero-wallet-wagmi-connector';
 import { ChakraProvider } from '@chakra-ui/react'
 import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
-import { useEffect, useMemo, useState } from 'react';
 
 const zeroWalletConnectorOptions = {
-    jsonRpcProviderUrl:
-        `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+    jsonRpcProviderUrls:{
+        5: `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+        10: undefined,
+        137: undefined,
+        42220: undefined,
+    },
     store: 'browser',
     recoveryMechanism: 'google',
     zeroWalletServerEndpoints: {
@@ -27,11 +30,6 @@ const connector = new ZeroWalletConnector({
     options: zeroWalletConnectorOptions
 });
 
-// const provider = new ZeroWalletProvider(zeroWalletConnectorOptions.jsonRpcProviderUrl,
-//     { name: 'goerli', chainId: 5 },
-//     StorageFactory.create(zeroWalletConnectorOptions.store),
-//     zeroWalletConnectorOptions.zeroWalletServerEndpoints,
-//     zeroWalletConnectorOptions.gasTankName)
 
 const provider = getDefaultProvider(chain.goerli.id)
 
