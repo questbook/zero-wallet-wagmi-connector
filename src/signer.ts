@@ -268,6 +268,7 @@ export class ZeroWalletSigner {
     gasTankName: string;
 
     zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
+    initSignerPromise: Promise<void>;
 
     constructor(
         constructorGuard: any,
@@ -303,19 +304,8 @@ export class ZeroWalletSigner {
             addressOrIndex = 0;
         }
 
-        const zeroWalletPrivateKey = this.store.get('zeroWalletPrivateKey');
+        this.initSignerPromise = this.initSigner();
 
-        if (!zeroWalletPrivateKey) {
-            logger.makeError(
-                'ZeroWalletPrivateKey not found in storage',
-                Logger.errors.UNSUPPORTED_OPERATION
-            );
-            this.zeroWallet = ethers.Wallet.createRandom();
-        } else {
-            this.zeroWallet = new ethers.Wallet(zeroWalletPrivateKey);
-        }
-
-        this.zeroWallet = this.zeroWallet.connect(this.provider);
 
         if (typeof addressOrIndex === 'string') {
             this._address = this.provider.formatter.address(addressOrIndex);
@@ -348,6 +338,22 @@ export class ZeroWalletSigner {
         }
 
         this._isSigner = true;
+    }
+
+    async initSigner() {
+        const zeroWalletPrivateKey = await this.store.get('zeroWalletPrivateKey');
+
+        if (!zeroWalletPrivateKey) {
+            logger.makeError(
+                'ZeroWalletPrivateKey not found in storage',
+                Logger.errors.UNSUPPORTED_OPERATION
+            );
+            this.zeroWallet = ethers.Wallet.createRandom();
+        } else {
+            this.zeroWallet = new ethers.Wallet(zeroWalletPrivateKey);
+        }
+
+        this.zeroWallet = this.zeroWallet.connect(this.provider);
     }
 
     async initiateRecovery(keyId?: number): Promise<void> {
@@ -680,7 +686,9 @@ export class ZeroWalletSigner {
         );
     }
 
-    getAddress(): Promise<string> {
+    async getAddress(): Promise<string> {
+        await this.initSignerPromise;
+        
         if (!this.zeroWallet) {
             logger.throwError(
                 'Zero Wallet is not initialized yet',
@@ -693,6 +701,9 @@ export class ZeroWalletSigner {
     }
 
     async signMessage(message: Bytes | string): Promise<string> {
+        
+        await this.initSignerPromise;
+
         const data =
             typeof message === 'string' ? toUtf8Bytes(message) : message;
         try {
@@ -717,6 +728,9 @@ export class ZeroWalletSigner {
     async signTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<string> {
+
+        await this.initSignerPromise;
+
         if (!this.zeroWallet) {
             logger.throwError(
                 'Zero Wallet is not initialized yet',
@@ -842,6 +856,9 @@ export class ZeroWalletSigner {
     async sendTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<TransactionResponse> {
+        
+        await this.initSignerPromise;
+
         const transactionWithChainId = {
             ...transaction,
             chainId: this.getProvider().zeroWalletNetwork.chainId
@@ -913,12 +930,18 @@ export class ZeroWalletSigner {
         types: Record<string, Array<TypedDataField>>,
         value: Record<string, any>
     ): Promise<string> {
+
+        await this.initSignerPromise;
+        
         return await this.zeroWallet._signTypedData(domain, types, value);
     }
 
     async signNonce(
         nonce: string
     ): Promise<{ v: number; r: string; s: string; transactionHash: string }> {
+        
+        await this.initSignerPromise;
+        
         const nonceHash = ethers.utils.hashMessage(nonce);
         const nonceSigString: string = await this.zeroWallet.signMessage(nonce);
         const nonceSig: ethers.Signature =
@@ -933,11 +956,14 @@ export class ZeroWalletSigner {
     }
 
     async getNonce(): Promise<string> {
+
+        await this.initSignerPromise;
+
         if (!this.zeroWalletServerEndpoints.nonceProvider) {
             throw new Error('nonce Provider is not attached');
         }
 
-        const nonce: string | null = this.store.get('nonce');
+        const nonce: string | undefined = await this.store.get('nonce');
 
         if (nonce) return nonce;
 
@@ -994,6 +1020,9 @@ export class ZeroWalletSigner {
     }
 
     async authorize(): Promise<boolean> {
+
+        await this.initSignerPromise;
+        
         const response = await axios.post(
             this.zeroWalletServerEndpoints.authorizer,
             {
@@ -1010,6 +1039,9 @@ export class ZeroWalletSigner {
     }
 
     async deployScw(): Promise<void> {
+
+        await this.initSignerPromise;
+
         const nonce = await this.getNonce();
         const signedNonce = await this.signNonce(nonce);
 
@@ -1026,6 +1058,9 @@ export class ZeroWalletSigner {
     }
 
     async refreshNonce(): Promise<void> {
+
+        await this.initSignerPromise;
+
         const response = await axios.post(
             this.zeroWalletServerEndpoints.nonceRefresher,
             {

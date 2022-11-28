@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 import { Chain, Connector, ConnectorData } from 'wagmi';
 import { SupportedChainId } from './constants/chains';
@@ -76,31 +75,18 @@ export class ZeroWalletConnector extends Connector<
             provider.on('disconnect', this.onDisconnect);
         }
 
-        this.emit('message', { type: 'connecting' });
+        const signer = this.provider.getSigner();
+        await signer.initSignerPromise;
+        
+        this.emit('message', { type: 'connecting' })
 
-        const privateKey = this.store.get('zeroWalletPrivateKey');
 
-        let newZeroWallet = ethers.Wallet.createRandom();
-
-        if (!privateKey) {
-            this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
-        } else {
-            try {
-                newZeroWallet = new ethers.Wallet(privateKey);
-            } catch {
-                this.store.set(
-                    'zeroWalletPrivateKey',
-                    newZeroWallet.privateKey
-                );
-            }
-        }
-
-        this.store.set('ZeroWalletConnected', 'true');
+        await this.store.set('ZeroWalletConnected', 'true');
 
         const chainId = await this.getChainId();
 
         return {
-            account: newZeroWallet.address,
+            account: await signer.getAddress(),
             chain: {
                 id: chainId,
                 unsupported: false
@@ -121,7 +107,7 @@ export class ZeroWalletConnector extends Connector<
         provider.removeListener('chainChanged', this.onChainChanged);
         provider.removeListener('disconnect', this.onDisconnect);
 
-        this.store.set('ZeroWalletConnected', 'false');
+        await this.store.set('ZeroWalletConnected', 'false');
     }
 
     async getAccount(): Promise<string> {
@@ -145,8 +131,8 @@ export class ZeroWalletConnector extends Connector<
 
     async isAuthorized(): Promise<boolean> {
         return (
-            this.store.get('ZeroWalletConnected') === 'true' &&
-            this.store.get('zeroWalletPrivateKey') !== undefined
+            (await this.store.get('ZeroWalletConnected')) === 'true' &&
+            (await this.store.get('zeroWalletPrivateKey')) !== undefined
         );
     }
 
