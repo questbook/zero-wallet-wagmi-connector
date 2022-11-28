@@ -37,7 +37,7 @@ describe('Test ZeroWalletSigner', () => {
         jsonRpcProviderUrl,
         network,
         storage,
-        zeroWalletServerEndpoints,
+        'zeroWalletServerDomain',
         gasTankName
     );
 

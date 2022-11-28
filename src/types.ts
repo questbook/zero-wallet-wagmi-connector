@@ -5,7 +5,7 @@ export type ZeroWalletConnectorOptions = {
     jsonRpcProviderUrls: JsonRpcProviderUrls;
     store: string;
     recoveryMechanism: string;
-    zeroWalletServerEndpoints: ZeroWalletServerEndpoints;
+    zeroWalletServerDomain: string;
     gasTankName: string;
 };
 

@@ -36,7 +36,7 @@ export class ZeroWalletConnector extends Connector<
                     this.options.jsonRpcProviderUrls[chain.id],
                     { chainId: chain.id, name: chain.name },
                     this.store,
-                    this.options.zeroWalletServerEndpoints,
+                    this.options.zeroWalletServerDomain,
                     this.options.gasTankName
                 );
 

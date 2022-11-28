@@ -40,7 +40,7 @@ describe('Test ZeroWalletProvider methods', () => {
         jsonRpcProviderUrl,
         network,
         storage,
-        zeroWalletServerEndpoints,
+        'zeroWalletServerEndpoints',
         gasTankName
     );
 

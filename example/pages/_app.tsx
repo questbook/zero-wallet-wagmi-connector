@@ -14,14 +14,7 @@ const zeroWalletConnectorOptions = {
     },
     store: 'browser',
     recoveryMechanism: 'google',
-    zeroWalletServerEndpoints: {
-        nonceProvider: process.env.NEXT_PUBLIC_NONCE_PROVIDER_ENDPOINT!,
-        nonceRefresher: process.env.NEXT_PUBLIC_NONCE_REFRESHER_ENDPOINT!,
-        authorizer: process.env.NEXT_PUBLIC_AUTHORIZER_ENDPOINT!,
-        gasStation: process.env.NEXT_PUBLIC_GAS_STATION_ENDPOINT!,
-        transactionBuilder: process.env.NEXT_PUBLIC_TRANSACTION_BUILDER_ENDPOINT!,
-        scwDeployer: process.env.NEXT_PUBLIC_SCW_DEPLOYER_ENDPOINT!
-    },
+    zeroWalletServerDomain: process.env.NEXT_PUBLIC_BACKEND_DOMAIN!,
     gasTankName: 'testGasTankName'
 }
 

@@ -271,7 +271,7 @@ export class ZeroWalletSigner {
         constructorGuard: any,
         provider: ZeroWalletProvider,
         store: IStoreable,
-        zeroWalletServerEndpoints: ZeroWalletServerEndpoints,
+        zeroWalletServerDomain: string,
         gasTankName: string,
         addressOrIndex?: string | number,
         recoveryMechansim?: RecoveryMechanism
@@ -283,7 +283,16 @@ export class ZeroWalletSigner {
         }
 
         this.gasTankName = gasTankName;
-        this.zeroWalletServerEndpoints = zeroWalletServerEndpoints;
+
+        this.zeroWalletServerEndpoints = {
+            nonceProvider: zeroWalletServerDomain + '/api/auth/getNonce',
+            nonceRefresher: zeroWalletServerDomain + '/api/auth/refreshNonce',
+            authorizer: zeroWalletServerDomain + '/api/auth/authorize',
+            gasStation: zeroWalletServerDomain + '/api/tx/send',
+            transactionBuilder: zeroWalletServerDomain + '/api/tx/build',
+            scwDeployer: zeroWalletServerDomain + '/api/tx/deploy',
+        }
+        
         this.store = store;
         this.provider = provider;
         // defineReadOnly(this, "provider", provider);
