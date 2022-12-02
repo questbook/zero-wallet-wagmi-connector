@@ -1,20 +1,19 @@
-import { SupportedChainId, chainsNames } from "constants/chains";
-import { ethers } from "ethers";
-import { deepCopy, fetchJson } from "ethers/lib/utils";
-import { GoogleRecoveryMechanismOptions, GoogleRecoveryWeb, RecoveryMechanism } from "recovery";
-import { ZeroWalletSigner } from "signer";
-import { IStoreable } from "store/IStoreable";
-import { StorageFactory } from "store/storageFactory";
-import { Chain } from "wagmi";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { ethers } from 'ethers';
+import { deepCopy, fetchJson } from 'ethers/lib/utils';
+import { Chain } from 'wagmi';
+import { chainsNames, SupportedChainId } from './constants/chains';
+import { IStoreable } from './store/IStoreable';
+import { ZeroWalletSigner } from './signer';
+import { RecoveryConfig } from './types';
 
-const _constructorGuard = {};
-const GOOGLE_CLEINT_ID = process.env.GOOGLE_CLIENT_ID!;
-const ZERO_WALLET_FOLDER_NAME = ".zero-wallet";
-const ZERO_WALLET_FILE_NAME = "key";
+export const _constructorGuard = {};
 
-function getResult(payload: { error?: { code?: number, data?: any, message?: string }, result?: any }): any {
+function getResult(payload: {
+    error?: { code?: number; data?: any; message?: string };
+    result?: any;
+}): any {
     if (payload.error) {
-        // @TODO: not any
         const error: any = new Error(payload.error.message);
         error.code = payload.error.code;
         error.data = payload.error.data;
@@ -25,32 +24,38 @@ function getResult(payload: { error?: { code?: number, data?: any, message?: str
 }
 
 export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
-
     private store: IStoreable;
     zeroWalletNetwork: ethers.providers.Network;
+    zeroWalletServerDomain: string;
+    gasTankName: string;
+    recovery: RecoveryConfig | undefined;
 
-    constructor(jsonRpcProviderUrl: string, network: ethers.providers.Network, store: IStoreable, recoveryMechanism: RecoveryMechanism) {
-        super(jsonRpcProviderUrl);
+    constructor(
+        jsonRpcProviderUrl: string,
+        network: ethers.providers.Network,
+        store: IStoreable,
+        zeroWalletServerDomain: string,
+        gasTankName: string,
+        recoveryConfig?: RecoveryConfig
+    ) {
+        super(jsonRpcProviderUrl, network);
+        this.zeroWalletServerDomain = zeroWalletServerDomain;
         this.store = store;
         this.zeroWalletNetwork = network;
+        this.gasTankName = gasTankName;
+        this.recovery = recoveryConfig;
     }
 
+    // @ts-ignore
     getSigner(addressOrIndex?: string | number): ZeroWalletSigner {
-        const googleRecoveryMechanismOptions: GoogleRecoveryMechanismOptions = {
-            googleClientId: GOOGLE_CLEINT_ID,
-            folderNameGD: ZERO_WALLET_FOLDER_NAME,
-            fileNameGD: ZERO_WALLET_FILE_NAME,
-            allowMultiKeys: true,
-            handleExistingKey: "Overwrite",
-        };
-
-        const googleRecoveryWeb = new GoogleRecoveryWeb(googleRecoveryMechanismOptions)
         return new ZeroWalletSigner(
             _constructorGuard,
             this,
             this.store,
-            addressOrIndex,
-            googleRecoveryWeb
+            this.zeroWalletServerDomain,
+            this.gasTankName,
+            undefined,
+            this.recovery
         );
     }
 
@@ -59,50 +64,52 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     }
 
     async send(method: string, params: Array<any>): Promise<any> {
-        if(method == 'eth_sendTransaction'){
-            // @TODO add code for calling zero-wallet-server-sdk
-            // should return the transaction hash
-        }
         const request = {
             method: method,
             params: params,
-            id: (this._nextId++),
-            jsonrpc: "2.0"
+            id: this._nextId++,
+            jsonrpc: '2.0'
         };
 
-        this.emit("debug", {
-            action: "request",
+        this.emit('debug', {
+            action: 'request',
             request: deepCopy(request),
             provider: this
         });
 
         // We can expand this in the future to any call, but for now these
         // are the biggest wins and do not require any serializing parameters.
-        const cache = ([ "eth_chainId", "eth_blockNumber" ].indexOf(method) >= 0);
-        if (cache && await this._cache[method]) {
+        const cache = ['eth_chainId', 'eth_blockNumber'].indexOf(method) >= 0;
+        if (cache && (await this._cache[method])) {
             return this._cache[method];
         }
 
-        const result = fetchJson(this.connection, JSON.stringify(request), getResult).then((result) => {
-            this.emit("debug", {
-                action: "response",
-                request: request,
-                response: result,
-                provider: this
-            });
+        const result = fetchJson(
+            this.connection,
+            JSON.stringify(request),
+            getResult
+        ).then(
+            (result) => {
+                this.emit('debug', {
+                    action: 'response',
+                    request: request,
+                    response: result,
+                    provider: this
+                });
 
-            return result;
+                return result;
+            },
+            (error) => {
+                this.emit('debug', {
+                    action: 'response',
+                    error: error,
+                    request: request,
+                    provider: this
+                });
 
-        }, (error) => {
-            this.emit("debug", {
-                action: "response",
-                error: error,
-                request: request,
-                provider: this
-            });
-
-            throw error;
-        });
+                throw error;
+            }
+        );
 
         // Cache the fetch, but clear it on the next event loop
         if (cache) {
@@ -116,8 +123,6 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     }
 
     async switchNetwork(chainId: SupportedChainId): Promise<Chain> {
-        const network = await this.getNetwork();
-        
         this.zeroWalletNetwork.chainId = chainId;
 
         this.zeroWalletNetwork.name = chainsNames[chainId];
@@ -126,7 +131,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             id: this.zeroWalletNetwork.chainId,
             name: this.zeroWalletNetwork.name,
             network: this.zeroWalletNetwork.name
-        } as Chain
+        } as Chain;
     }
 
     detectNetwork(): Promise<ethers.providers.Network> {

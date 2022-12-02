@@ -1,27 +1,32 @@
-import { IStoreable } from "./IStoreable";
+import { IStoreable } from './IStoreable';
 
 export class BrowserStorage implements IStoreable {
-    get(key: string): string | null {
+    get(key: string): string | undefined {
         try {
-            const item = localStorage.getItem(key);
+            const value = localStorage.getItem(key);
 
-            if (!item) {
-                return null;
+            if (!value) {
+                return undefined;
             }
-            return item;
-        }
-        catch {
-            throw new Error("Failed to get item from local storage");
-        }
 
+            return value;
+        } catch(e) {
+            throw new Error(`Error ${e}. Failed to get item from local storage for key '${key}'`);
+        }
     }
 
-    set(key: string, value: string) {
+    set(key: string, value: any) {
         try {
-            localStorage.setItem(key, value);
-        }
-        catch {
-            throw new Error("Failed to set item in local storage");   
+            if(typeof value === 'string') {
+                localStorage.setItem(key, value);
+            }
+            else{
+                const jsonValue = JSON.stringify(value)
+                localStorage.setItem(key, jsonValue)
+            }
+
+        } catch(e) {
+            throw new Error(`Error: ${e}. Failed to set item in local storage for {${key}: ${value}}`);
         }
     }
 }

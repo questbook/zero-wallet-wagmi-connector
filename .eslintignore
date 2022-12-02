@@ -1,3 +1,6 @@
 node_modules
 .vscode
 lib
+babel.config.js
+jest.config.ts
+example
