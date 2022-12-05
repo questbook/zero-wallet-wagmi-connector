@@ -38,12 +38,12 @@ export const loadGoogleScript = (src: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${src}"]`)) return resolve();
         const script = document.createElement('script');
+        script.onload = () => resolve();
+        script.onerror = (err) => reject(err);
         script.src = src;
         script.async = true;
         script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = (err) => reject(err);
-        document.body.appendChild(script);
+        document.head.appendChild(script); 
     });
 };
 

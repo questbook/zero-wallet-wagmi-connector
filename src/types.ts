@@ -1,10 +1,21 @@
 import { SupportedChainId } from './constants/chains';
+import { MetamaskRecoveryMechanismOption } from './recovery/MetamaskRecovery';
 import { IStoreable } from './store/IStoreable';
 import type { GoogleRecoveryMechanismOptions } from './recovery';
 
-export type GoogleWebRecoveryConnectorOptions =
-    GoogleRecoveryMechanismOptions & { type: 'google-web-recovery' };
-export type RecoveryConfig = GoogleWebRecoveryConnectorOptions;
+export interface GoogleWebRecoveryConnectorOptions
+    extends GoogleRecoveryMechanismOptions {
+    type: 'google-web-recovery';
+}
+
+interface MetamaskRecoveryConnectorOptions
+    extends MetamaskRecoveryMechanismOption {
+    type: 'metamask-recovery';
+}
+
+export type RecoveryConfig =
+    | GoogleWebRecoveryConnectorOptions
+    | MetamaskRecoveryConnectorOptions;
 
 export type ZeroWalletConnectorOptions = {
     jsonRpcProviderUrls: JsonRpcProviderUrls;

@@ -10,23 +10,25 @@ export class BrowserStorage implements IStoreable {
             }
 
             return value;
-        } catch(e) {
-            throw new Error(`Error ${e}. Failed to get item from local storage for key '${key}'`);
+        } catch (e) {
+            throw new Error(
+                `Error ${e}. Failed to get item from local storage for key '${key}'`
+            );
         }
     }
 
     set(key: string, value: any) {
         try {
-            if(typeof value === 'string') {
+            if (typeof value === 'string') {
                 localStorage.setItem(key, value);
+            } else {
+                const jsonValue = JSON.stringify(value);
+                localStorage.setItem(key, jsonValue);
             }
-            else{
-                const jsonValue = JSON.stringify(value)
-                localStorage.setItem(key, jsonValue)
-            }
-
-        } catch(e) {
-            throw new Error(`Error: ${e}. Failed to set item in local storage for {${key}: ${value}}`);
+        } catch (e) {
+            throw new Error(
+                `Error: ${e}. Failed to set item in local storage for {${key}: ${value}}`
+            );
         }
     }
 }

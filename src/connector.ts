@@ -77,9 +77,8 @@ export class ZeroWalletConnector extends Connector<
 
         const signer = this.provider.getSigner();
         await signer.initSignerPromise;
-        
-        this.emit('message', { type: 'connecting' })
 
+        this.emit('message', { type: 'connecting' });
 
         await this.store.set('ZeroWalletConnected', 'true');
 

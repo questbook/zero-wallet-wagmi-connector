@@ -18,6 +18,7 @@ import {
     shallowCopy,
     toUtf8Bytes
 } from 'ethers/lib/utils';
+import { MetamaskRecovery } from './recovery/MetamaskRecovery';
 import { IStoreable } from './store/IStoreable';
 import { ZeroWalletProvider } from './provider';
 import { _constructorGuard } from './provider';
@@ -306,7 +307,6 @@ export class ZeroWalletSigner {
 
         this.initSignerPromise = this.initSigner();
 
-
         if (typeof addressOrIndex === 'string') {
             this._address = this.provider.formatter.address(addressOrIndex);
             // @ts-ignore
@@ -324,11 +324,20 @@ export class ZeroWalletSigner {
         }
 
         if (recoveryConfig) {
-            const { type, ...config } = recoveryConfig;
+            const { type } = recoveryConfig;
 
             switch (type) {
                 case 'google-web-recovery':
-                    this.recoveryMechansim = new GoogleRecoveryWeb(config);
+                    this.recoveryMechansim = new GoogleRecoveryWeb(
+                        recoveryConfig
+                    );
+                    this.recoveryReadyPromise =
+                        this.recoveryMechansim.recoveryReadyPromise();
+                    break;
+                case 'metamask-recovery':
+                    this.recoveryMechansim = new MetamaskRecovery(
+                        recoveryConfig
+                    );
                     this.recoveryReadyPromise =
                         this.recoveryMechansim.recoveryReadyPromise();
                     break;
@@ -341,7 +350,9 @@ export class ZeroWalletSigner {
     }
 
     async initSigner() {
-        const zeroWalletPrivateKey = await this.store.get('zeroWalletPrivateKey');
+        const zeroWalletPrivateKey = await this.store.get(
+            'zeroWalletPrivateKey'
+        );
 
         if (!zeroWalletPrivateKey) {
             logger.makeError(
@@ -356,20 +367,23 @@ export class ZeroWalletSigner {
         this.zeroWallet = this.zeroWallet.connect(this.provider);
     }
 
+    changeZeroWallet(newZeroWallet: ethers.Wallet) {
+        this.zeroWallet = newZeroWallet.connect(this.provider);
+
+        this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
+        this.store.set('nonce', '');
+    }
+
     async initiateRecovery(keyId?: number): Promise<void> {
         if (!this.recoveryMechansim) {
             throw new Error('No recovery mechanism found');
         }
 
-        const { privateKey } = await this.recoveryMechansim.initiateRecovery(
+        const newZeroWallet = await this.recoveryMechansim.initiateRecovery(
             keyId
         );
 
-        this.zeroWallet = new ethers.Wallet(privateKey);
-        this.zeroWallet = this.zeroWallet.connect(this.provider);
-
-        this.store.set('zeroWalletPrivateKey', privateKey);
-        this.store.set('nonce', '');
+        this.changeZeroWallet(newZeroWallet);
     }
 
     async setupRecovery(): Promise<void> {
@@ -377,7 +391,14 @@ export class ZeroWalletSigner {
             throw new Error('No recovery mechanism found');
         }
 
-        await this.recoveryMechansim.setupRecovery(this.zeroWallet);
+        if (this.recoveryMechansim instanceof GoogleRecoveryWeb) {
+            await this.recoveryMechansim.setupRecovery(this.zeroWallet);
+        } else if (this.recoveryMechansim instanceof MetamaskRecovery) {
+            const newZeroWallet = await this.recoveryMechansim.setupRecovery(
+                this
+            );
+            this.changeZeroWallet(newZeroWallet);
+        }
     }
 
     async populateTransaction(
@@ -688,7 +709,7 @@ export class ZeroWalletSigner {
 
     async getAddress(): Promise<string> {
         await this.initSignerPromise;
-        
+
         if (!this.zeroWallet) {
             logger.throwError(
                 'Zero Wallet is not initialized yet',
@@ -701,7 +722,6 @@ export class ZeroWalletSigner {
     }
 
     async signMessage(message: Bytes | string): Promise<string> {
-        
         await this.initSignerPromise;
 
         const data =
@@ -728,7 +748,6 @@ export class ZeroWalletSigner {
     async signTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<string> {
-
         await this.initSignerPromise;
 
         if (!this.zeroWallet) {
@@ -856,7 +875,6 @@ export class ZeroWalletSigner {
     async sendTransaction(
         transaction: Deferrable<TransactionRequest>
     ): Promise<TransactionResponse> {
-        
         await this.initSignerPromise;
 
         const transactionWithChainId = {
@@ -930,18 +948,16 @@ export class ZeroWalletSigner {
         types: Record<string, Array<TypedDataField>>,
         value: Record<string, any>
     ): Promise<string> {
-
         await this.initSignerPromise;
-        
+
         return await this.zeroWallet._signTypedData(domain, types, value);
     }
 
     async signNonce(
         nonce: string
     ): Promise<{ v: number; r: string; s: string; transactionHash: string }> {
-        
         await this.initSignerPromise;
-        
+
         const nonceHash = ethers.utils.hashMessage(nonce);
         const nonceSigString: string = await this.zeroWallet.signMessage(nonce);
         const nonceSig: ethers.Signature =
@@ -956,7 +972,6 @@ export class ZeroWalletSigner {
     }
 
     async getNonce(): Promise<string> {
-
         await this.initSignerPromise;
 
         if (!this.zeroWalletServerEndpoints.nonceProvider) {
@@ -1020,9 +1035,8 @@ export class ZeroWalletSigner {
     }
 
     async authorize(): Promise<boolean> {
-
         await this.initSignerPromise;
-        
+
         const response = await axios.post(
             this.zeroWalletServerEndpoints.authorizer,
             {
@@ -1039,7 +1053,6 @@ export class ZeroWalletSigner {
     }
 
     async deployScw(): Promise<void> {
-
         await this.initSignerPromise;
 
         const nonce = await this.getNonce();
@@ -1058,7 +1071,6 @@ export class ZeroWalletSigner {
     }
 
     async refreshNonce(): Promise<void> {
-
         await this.initSignerPromise;
 
         const response = await axios.post(
