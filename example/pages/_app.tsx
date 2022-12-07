@@ -8,12 +8,16 @@ import {
     ZeroWalletConnectorOptions} from 'zero-wallet-wagmi-connector';
 // import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
 
-const googleRecoveryOption: RecoveryConfig = {
-    type: 'google-web-recovery',
-    googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-    allowMultiKeys: false,
-    handleExistingKey: 'Overwrite'
-};
+// const googleRecoveryOption: RecoveryConfig = {
+//     type: 'google-web-recovery',
+//     googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+//     allowMultiKeys: false,
+//     handleExistingKey: 'Overwrite'
+// };
+
+const metamaskRecoveryOption: RecoveryConfig = {
+    type: 'metamask-recovery',
+}
 
 const zeroWalletConnectorOptions: ZeroWalletConnectorOptions = {
     jsonRpcProviderUrls:{ 5: `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
@@ -24,7 +28,7 @@ const zeroWalletConnectorOptions: ZeroWalletConnectorOptions = {
     store: 'browser',
     zeroWalletServerDomain: process.env.NEXT_PUBLIC_BACKEND_DOMAIN!,
     gasTankName: 'testGasTankName',
-    recovery: googleRecoveryOption
+    recovery: metamaskRecoveryOption
 }
 
 const connector = new ZeroWalletConnector({

@@ -359,16 +359,17 @@ export class ZeroWalletSigner {
                 'ZeroWalletPrivateKey not found in storage',
                 Logger.errors.UNSUPPORTED_OPERATION
             );
-            this.zeroWallet = ethers.Wallet.createRandom();
+            this.changeZeroWallet(ethers.Wallet.createRandom())
         } else {
-            this.zeroWallet = new ethers.Wallet(zeroWalletPrivateKey);
+            this.changeZeroWallet(new ethers.Wallet(zeroWalletPrivateKey))
         }
 
-        this.zeroWallet = this.zeroWallet.connect(this.provider);
+        // this.zeroWallet = this.zeroWallet.connect(this.provider);
     }
 
     changeZeroWallet(newZeroWallet: ethers.Wallet) {
         this.zeroWallet = newZeroWallet.connect(this.provider);
+        // this._address = this.zeroWallet.address;
 
         this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
         this.store.set('nonce', '');
@@ -384,6 +385,7 @@ export class ZeroWalletSigner {
         );
 
         this.changeZeroWallet(newZeroWallet);
+        console.log('Recovery initiated and address changed to', newZeroWallet.address);
     }
 
     async setupRecovery(): Promise<void> {
@@ -1063,11 +1065,13 @@ export class ZeroWalletSigner {
             nonce: nonce
         };
 
-        await axios.post<string>(this.zeroWalletServerEndpoints.scwDeployer, {
+        const { data: { scwAddress: newScwAddress } } = await axios.post<{"scwAddress": string}>(this.zeroWalletServerEndpoints.scwDeployer, {
             zeroWalletAddress: this.zeroWallet.address,
             gasTankName: this.gasTankName,
             webHookAttributes
         });
+
+        this.scwAddress = newScwAddress;
     }
 
     async refreshNonce(): Promise<void> {

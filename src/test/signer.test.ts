@@ -107,6 +107,8 @@ describe('Test ZeroWalletSigner', () => {
 
     const signer = provider.getSigner();
 
+    // test('should have an SCW address after deployment')
+
     test('should have a valid nonce', async () => {
         const nonce = '1';
         mockedAxios.post.mockImplementation((url: string) => {

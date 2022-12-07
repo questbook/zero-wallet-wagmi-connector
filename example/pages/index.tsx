@@ -5,13 +5,15 @@ import {
     ButtonGroup,
     Flex,
     Input,
-    useColorMode} from '@chakra-ui/react';
+    useColorMode
+} from '@chakra-ui/react';
 import Head from 'next/head';
 import {
     Connector,
     useConnect,
     useContract,
-    useSigner
+    useSigner,
+    useAccount
 } from 'wagmi';
 import { ZeroWalletSigner } from 'zero-wallet-wagmi-connector';
 import { contractAbi, contractAddress } from '../src/constants/contract';
@@ -20,8 +22,10 @@ export default function Home() {
     // state
     const [newNumber, setNewNumber] = useState<string>('');
     const [contractNumber, setContractNumber] = useState<number | null>(null);
+    const [signerAddress, setSignerAddress] = useState<string | null>(null);
 
     // wagmi hooks
+    const { address} = useAccount();
     const { data: signer } = useSigner<ZeroWalletSigner>();
     const { connect, connectors } = useConnect();
     const contract = useContract({
@@ -38,7 +42,7 @@ export default function Home() {
     const { setColorMode } = useColorMode();
     useEffect(() => {
         setColorMode('dark');
-    // @ts-ignore
+        // @ts-ignore
     }, []);
 
     useEffect(() => {
@@ -46,11 +50,14 @@ export default function Home() {
             if (signer && contract) {
                 try {
                     await signer.authorize();
-                } catch {}
+                } catch { }
 
                 try {
                     await signer.deployScw();
-                } catch {}
+                } catch { }
+                
+                const newSignerAddress = await signer.getAddress();
+                setSignerAddress(newSignerAddress);
 
                 const newContractNumber = await contract.value();
                 setContractNumber(parseInt(newContractNumber));
@@ -71,15 +78,15 @@ export default function Home() {
         if (!signer) return;
         try {
             await signer.authorize();
-        } catch {}
+        } catch { }
 
         try {
             await signer.deployScw();
-        } catch {}
+        } catch { }
 
-        try {
-            await signer.refreshNonce();
-        } catch {}
+        // try {
+        //     await signer.refreshNonce();
+        // } catch { }
 
         const tx = await contract.set(parseInt(newNumber));
         await tx?.wait();
@@ -131,6 +138,8 @@ export default function Home() {
         setLoading(false);
     };
 
+    console.log('signer', signer?.scwAddress)
+
     return (
         <Flex
             justifyContent="center"
@@ -164,6 +173,15 @@ export default function Home() {
                     <Box>
                         Storage value:{' '}
                         {contractNumber ? contractNumber : 'loading...'}
+                    </Box>
+                    <Box>
+                        Your SCW address: {signer.scwAddress}
+                        <br />
+                        Your signer _address: {signer._address}
+                        <br />
+                        Your zero wallet address: {address}
+                        <br />
+                        Your zero wallet signer address: {signerAddress}
                     </Box>
                     <Flex gap={2}>
                         <Input
