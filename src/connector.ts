@@ -31,11 +31,11 @@ export class ZeroWalletConnector extends Connector<
         config.chains?.forEach((chain) => {
             if (chain) {
                 const provider = (this.provider = new ZeroWalletProvider(
-                    this.options.jsonRpcProviderUrls[chain.id],
+                    config.options.jsonRpcProviderUrls[chain.id],
                     { chainId: chain.id, name: chain.name },
                     this.store,
-                    this.options.zeroWalletServerDomain,
-                    this.options.gasTankName,
+                    config.options.zeroWalletServerDomain,
+                    config.options.gasTankName,
                     config.options.recovery
                 ));
 
@@ -75,7 +75,7 @@ export class ZeroWalletConnector extends Connector<
             provider.on('disconnect', this.onDisconnect);
         }
 
-        const signer = this.provider.getSigner();
+        const signer = this.provider.getSigner(undefined, false);
         await signer.initSignerPromise;
         
         this.emit('message', { type: 'connecting' })
@@ -126,7 +126,7 @@ export class ZeroWalletConnector extends Connector<
     }
 
     async getSigner(): Promise<ZeroWalletSigner> {
-        return this.provider.getSigner('browser');
+        return this.provider.getSigner();
     }
 
     async isAuthorized(): Promise<boolean> {

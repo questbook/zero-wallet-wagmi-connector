@@ -47,7 +47,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     }
 
     // @ts-ignore
-    getSigner(addressOrIndex?: string | number): ZeroWalletSigner {
+    getSigner(addressOrIndex?: string | number, isInitRecovery?: boolean): ZeroWalletSigner {
         return new ZeroWalletSigner(
             _constructorGuard,
             this,
@@ -55,7 +55,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
             this.zeroWalletServerDomain,
             this.gasTankName,
             undefined,
-            this.recovery
+            isInitRecovery !== false ? this.recovery : undefined
         );
     }
 
