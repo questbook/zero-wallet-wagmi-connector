@@ -343,12 +343,16 @@ export class ZeroWalletSigner {
     async initSigner() {
         const zeroWalletPrivateKey = await this.store.get('zeroWalletPrivateKey');
 
+        this.store.set('nonce', '');
+
         if (!zeroWalletPrivateKey) {
-            logger.makeError(
-                'ZeroWalletPrivateKey not found in storage',
-                Logger.errors.UNSUPPORTED_OPERATION
+            logger.info(
+                'ZeroWalletPrivateKey not found in storage'
             );
+
             this.zeroWallet = ethers.Wallet.createRandom();
+            this.store.set('zeroWalletPrivateKey', this.zeroWallet.privateKey);
+
         } else {
             this.zeroWallet = new ethers.Wallet(zeroWalletPrivateKey);
         }
@@ -1070,7 +1074,7 @@ export class ZeroWalletSigner {
         );
 
         if (!response.data?.nonce) {
-            throw new Error('nonce is not refreshed');
+            throw new Error('nonce is not refreshed. Make sure you called authorize() first.');
         }
 
         this.store.set('nonce', response.data.nonce);
