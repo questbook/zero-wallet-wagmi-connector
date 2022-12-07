@@ -43,7 +43,7 @@ export const loadGoogleScript = (src: string): Promise<void> => {
         script.src = src;
         script.async = true;
         script.defer = true;
-        document.head.appendChild(script); 
+        document.head.appendChild(script);
     });
 };
 

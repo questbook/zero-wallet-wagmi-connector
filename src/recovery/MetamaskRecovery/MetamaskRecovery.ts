@@ -59,14 +59,18 @@ export default class MetamaskRecovery implements RecoveryMechanism {
         signer: ZeroWalletSigner,
         newWallet: Wallet
     ): Promise<void> {
-        await signer.deployScw()
+        await signer.deployScw();
         if (!signer.scwAddress)
             throw new Error('Signer does not have an SCW address');
 
-        const scwContract = new Contract(signer.scwAddress, ["function setOwner(address _newOwner)"], signer);
+        const scwContract = new Contract(
+            signer.scwAddress,
+            ['function setOwner(address _newOwner)'],
+            signer
+        );
         const tx = await scwContract.setOwner(newWallet.address);
         await tx.wait();
-        console.log("changed scw's owner to", newWallet.address)
+        console.log("changed scw's owner to", newWallet.address);
     }
 
     async setupRecovery(wallet: ZeroWalletSigner): Promise<Wallet> {
@@ -75,8 +79,8 @@ export default class MetamaskRecovery implements RecoveryMechanism {
         return newZeroWallet;
     }
 
-    // @ts-ignore 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async initiateRecovery(keyId?: number): Promise<Wallet> {
         const newZeroWallet = await this._getNewZeroWalletMetamask();
         return newZeroWallet;

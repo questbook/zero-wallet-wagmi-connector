@@ -354,25 +354,19 @@ export class ZeroWalletSigner {
             'zeroWalletPrivateKey'
         );
 
-        if (!zeroWalletPrivateKey) {
-            logger.makeError(
-                'ZeroWalletPrivateKey not found in storage',
-                Logger.errors.UNSUPPORTED_OPERATION
-            );
-            this.changeZeroWallet(ethers.Wallet.createRandom())
-        } else {
-            this.changeZeroWallet(new ethers.Wallet(zeroWalletPrivateKey))
-        }
+        this.store.set('nonce', '');
 
-        // this.zeroWallet = this.zeroWallet.connect(this.provider);
+        if (!zeroWalletPrivateKey) {
+            logger.info('ZeroWalletPrivateKey not found in storage');
+            this.changeZeroWallet(ethers.Wallet.createRandom());
+        } else {
+            this.changeZeroWallet(new ethers.Wallet(zeroWalletPrivateKey));
+        }
     }
 
     changeZeroWallet(newZeroWallet: ethers.Wallet) {
         this.zeroWallet = newZeroWallet.connect(this.provider);
-        // this._address = this.zeroWallet.address;
-
         this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
-        this.store.set('nonce', '');
     }
 
     async initiateRecovery(keyId?: number): Promise<void> {
@@ -385,7 +379,10 @@ export class ZeroWalletSigner {
         );
 
         this.changeZeroWallet(newZeroWallet);
-        console.log('Recovery initiated and address changed to', newZeroWallet.address);
+        console.log(
+            'Recovery initiated and address changed to',
+            newZeroWallet.address
+        );
     }
 
     async setupRecovery(): Promise<void> {
@@ -1065,11 +1062,16 @@ export class ZeroWalletSigner {
             nonce: nonce
         };
 
-        const { data: { scwAddress: newScwAddress } } = await axios.post<{"scwAddress": string}>(this.zeroWalletServerEndpoints.scwDeployer, {
-            zeroWalletAddress: this.zeroWallet.address,
-            gasTankName: this.gasTankName,
-            webHookAttributes
-        });
+        const {
+            data: { scwAddress: newScwAddress }
+        } = await axios.post<{ scwAddress: string }>(
+            this.zeroWalletServerEndpoints.scwDeployer,
+            {
+                zeroWalletAddress: this.zeroWallet.address,
+                gasTankName: this.gasTankName,
+                webHookAttributes
+            }
+        );
 
         this.scwAddress = newScwAddress;
     }
@@ -1086,7 +1088,9 @@ export class ZeroWalletSigner {
         );
 
         if (!response.data?.nonce) {
-            throw new Error('nonce is not refreshed');
+            throw new Error(
+                'nonce is not refreshed. Make sure you called authorize() first.'
+            );
         }
 
         this.store.set('nonce', response.data.nonce);
