@@ -32,7 +32,6 @@ const connector = new ZeroWalletConnector({
     options: zeroWalletConnectorOptions
 });
 
-
 const provider = getDefaultProvider(chain.goerli.id);
 
 const client = createClient({
