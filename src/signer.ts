@@ -358,15 +358,17 @@ export class ZeroWalletSigner {
 
         if (!zeroWalletPrivateKey) {
             logger.info('ZeroWalletPrivateKey not found in storage');
-            this.changeZeroWallet(ethers.Wallet.createRandom());
+            await this.changeZeroWallet(ethers.Wallet.createRandom());
         } else {
-            this.changeZeroWallet(new ethers.Wallet(zeroWalletPrivateKey));
+            await this.changeZeroWallet(new ethers.Wallet(zeroWalletPrivateKey));
         }
     }
 
-    changeZeroWallet(newZeroWallet: ethers.Wallet) {
+    async changeZeroWallet(newZeroWallet: ethers.Wallet) {
         this.zeroWallet = newZeroWallet.connect(this.provider);
-        this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
+        await this.store.set('zeroWalletPrivateKey', newZeroWallet.privateKey);
+
+        this.provider.emit('accountsChanged', [this.zeroWallet.address]);
     }
 
     async initiateRecovery(keyId?: number): Promise<void> {
@@ -378,7 +380,7 @@ export class ZeroWalletSigner {
             keyId
         );
 
-        this.changeZeroWallet(newZeroWallet);
+        await this.changeZeroWallet(newZeroWallet);
         console.log(
             'Recovery initiated and address changed to',
             newZeroWallet.address
@@ -396,7 +398,7 @@ export class ZeroWalletSigner {
             const newZeroWallet = await this.recoveryMechansim.setupRecovery(
                 this
             );
-            this.changeZeroWallet(newZeroWallet);
+            await this.changeZeroWallet(newZeroWallet);
         }
     }
 
