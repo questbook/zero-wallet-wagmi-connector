@@ -30,6 +30,7 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
     gasTankName: string;
     recovery: RecoveryConfig | undefined;
 
+
     constructor(
         jsonRpcProviderUrl: string,
         network: ethers.providers.Network,
@@ -46,8 +47,8 @@ export class ZeroWalletProvider extends ethers.providers.JsonRpcProvider {
         this.recovery = recoveryConfig;
     }
 
-    // @ts-ignore
     getSigner(
+        // @ts-ignore
         addressOrIndex?: string | number,
         isInitRecovery?: boolean
     ): ZeroWalletSigner {
