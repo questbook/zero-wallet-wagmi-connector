@@ -24,7 +24,7 @@
         "react": "18.2.0",
         "react-dom": "18.2.0",
         "typescript": "4.9.3",
-        "wagmi": "^0.6.4",
+        "wagmi": "^0.8.10",
         "zero-wallet-wagmi-connector": "file:.."
     }
 }

@@ -360,7 +360,9 @@ export class ZeroWalletSigner {
             logger.info('ZeroWalletPrivateKey not found in storage');
             await this.changeZeroWallet(ethers.Wallet.createRandom());
         } else {
-            await this.changeZeroWallet(new ethers.Wallet(zeroWalletPrivateKey));
+            await this.changeZeroWallet(
+                new ethers.Wallet(zeroWalletPrivateKey)
+            );
         }
     }
 
@@ -708,7 +710,7 @@ export class ZeroWalletSigner {
         );
     }
 
-    async getAddress(): Promise<string> {
+    async getAddress(): Promise<`0x${string}`> {
         await this.initSignerPromise;
 
         if (!this.zeroWallet) {
@@ -716,9 +718,11 @@ export class ZeroWalletSigner {
                 'Zero Wallet is not initialized yet',
                 Logger.errors.UNSUPPORTED_OPERATION
             );
-            return Promise.resolve('');
+            return Promise.resolve('0x');
         } else {
-            return Promise.resolve(this.zeroWallet.address);
+            return Promise.resolve(
+                this.zeroWallet.address as `0x${string}`
+            );
         }
     }
 
@@ -789,7 +793,7 @@ export class ZeroWalletSigner {
 
         const fromAddress = this.getAddress().then((address) => {
             if (address) {
-                address = address.toLowerCase();
+                address = address.toLowerCase() as `0x${string}`;
             }
 
             return address;

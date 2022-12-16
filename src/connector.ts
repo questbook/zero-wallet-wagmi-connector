@@ -109,7 +109,7 @@ export class ZeroWalletConnector extends Connector<
         await this.store.set('ZeroWalletConnected', 'false');
     }
 
-    async getAccount(): Promise<string> {
+    async getAccount(): Promise<`0x${string}`> {
         const signer = await this.getSigner();
         return await signer.getAddress();
     }
@@ -148,18 +148,17 @@ export class ZeroWalletConnector extends Connector<
     }
 
     protected onAccountsChanged(accounts: string[]) {
-        console.log('from connector', accounts)
+        console.log('from connector', accounts);
         if (accounts.length === 0) this.emit('disconnect');
         else {
             const newObj = {
                 account: getAddress(accounts[0] as string)
-            }
-            console.log('from connector', newObj)
+            };
+            console.log('from connector', newObj);
             this.emit('change', {
                 account: getAddress(accounts[0] as string)
             });
         }
-            
     }
 
     protected onChainChanged(chainId: number | string) {

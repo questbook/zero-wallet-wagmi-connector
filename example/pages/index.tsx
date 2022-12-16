@@ -29,8 +29,8 @@ export default function Home() {
     const { data: signer } = useSigner<ZeroWalletSigner>();
     const { connect, connectors } = useConnect();
     const contract = useContract({
-        addressOrName: contractAddress,
-        contractInterface: contractAbi,
+        address: contractAddress,
+        abi: contractAbi,
         signerOrProvider: signer
     });
 
@@ -106,7 +106,7 @@ export default function Home() {
         //     await signer.refreshNonce();
         // } catch { }
 
-        const tx = await contract.set(parseInt(newNumber));
+        const tx = await contract!.set(parseInt(newNumber));
         await tx?.wait();
     };
 
