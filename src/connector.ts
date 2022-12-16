@@ -148,11 +148,18 @@ export class ZeroWalletConnector extends Connector<
     }
 
     protected onAccountsChanged(accounts: string[]) {
+        console.log('from connector', accounts)
         if (accounts.length === 0) this.emit('disconnect');
-        else
+        else {
+            const newObj = {
+                account: getAddress(accounts[0] as string)
+            }
+            console.log('from connector', newObj)
             this.emit('change', {
                 account: getAddress(accounts[0] as string)
             });
+        }
+            
     }
 
     protected onChainChanged(chainId: number | string) {

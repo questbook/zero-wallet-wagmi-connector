@@ -27,7 +27,7 @@ const zeroWalletConnectorOptions: ZeroWalletConnectorOptions = {
     },
     store: 'browser',
     zeroWalletServerDomain: process.env.NEXT_PUBLIC_BACKEND_DOMAIN!,
-    gasTankName: 'testGasTankName',
+    gasTankName: 'zero-wallet-gastank',
     recovery: metamaskRecoveryOption
 }
 

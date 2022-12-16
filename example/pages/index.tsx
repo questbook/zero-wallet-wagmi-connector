@@ -25,7 +25,7 @@ export default function Home() {
     const [signerAddress, setSignerAddress] = useState<string | null>(null);
 
     // wagmi hooks
-    const { address} = useAccount();
+    const { address, status, connector } = useAccount();
     const { data: signer } = useSigner<ZeroWalletSigner>();
     const { connect, connectors } = useConnect();
     const contract = useContract({
@@ -37,6 +37,12 @@ export default function Home() {
     // recovery
     const [inited, setInited] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        console.log('address', address)
+        console.log('status', status)
+        console.log('connector', connector)
+    }, [address, status, connector])
 
     // chakra hooks
     const { setColorMode } = useColorMode();
@@ -55,7 +61,7 @@ export default function Home() {
                 try {
                     await signer.deployScw();
                 } catch { }
-                
+
                 const newSignerAddress = await signer.getAddress();
                 setSignerAddress(newSignerAddress);
 
@@ -69,6 +75,18 @@ export default function Home() {
 
         func();
     }, [signer, contract]);
+
+    useEffect(() => {
+        if (connector) {
+            console.log('connector changed')
+            connector.on('change', (data: any) => {
+                console.log('onChange', data)
+            });
+            connector.on('disconnect', () => {
+                console.log('onChange', 'disconnect')
+            });
+        }
+    }, [connector])
 
     const handleConnect = async (connector: Connector) => {
         connect({ connector: connector });
