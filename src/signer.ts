@@ -383,10 +383,6 @@ export class ZeroWalletSigner {
         );
 
         await this.changeZeroWallet(newZeroWallet);
-        console.log(
-            'Recovery initiated and address changed to',
-            newZeroWallet.address
-        );
     }
 
     async setupRecovery(): Promise<void> {
@@ -720,9 +716,7 @@ export class ZeroWalletSigner {
             );
             return Promise.resolve('0x');
         } else {
-            return Promise.resolve(
-                this.zeroWallet.address as `0x${string}`
-            );
+            return Promise.resolve(this.zeroWallet.address as `0x${string}`);
         }
     }
 

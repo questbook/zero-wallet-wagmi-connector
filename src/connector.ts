@@ -27,6 +27,9 @@ export class ZeroWalletConnector extends Connector<
         super(config);
 
         this.store = StorageFactory.create(config.options.store);
+        this.onAccountsChanged = this.onAccountsChanged.bind(this);
+        this.onChainChanged = this.onChainChanged.bind(this);
+        this.onDisconnect = this.onDisconnect.bind(this);
 
         config.chains?.forEach((chain) => {
             if (chain) {
@@ -148,16 +151,12 @@ export class ZeroWalletConnector extends Connector<
     }
 
     protected onAccountsChanged(accounts: string[]) {
-        console.log('from connector', accounts);
         if (accounts.length === 0) this.emit('disconnect');
         else {
-            const newObj = {
+            const newData = {
                 account: getAddress(accounts[0] as string)
             };
-            console.log('from connector', newObj);
-            this.emit('change', {
-                account: getAddress(accounts[0] as string)
-            });
+            this.emit('change', newData);
         }
     }
 

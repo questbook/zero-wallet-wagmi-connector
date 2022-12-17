@@ -10,11 +10,10 @@ import {
 import Head from 'next/head';
 import {
     Connector,
+    useAccount,
     useConnect,
     useContract,
-    useSigner,
-    useAccount
-} from 'wagmi';
+    useSigner} from 'wagmi';
 import { ZeroWalletSigner } from 'zero-wallet-wagmi-connector';
 import { contractAbi, contractAddress } from '../src/constants/contract';
 
@@ -22,10 +21,9 @@ export default function Home() {
     // state
     const [newNumber, setNewNumber] = useState<string>('');
     const [contractNumber, setContractNumber] = useState<number | null>(null);
-    const [signerAddress, setSignerAddress] = useState<string | null>(null);
 
     // wagmi hooks
-    const { address, status, connector } = useAccount();
+    const { address } = useAccount();
     const { data: signer } = useSigner<ZeroWalletSigner>();
     const { connect, connectors } = useConnect();
     const contract = useContract({
@@ -37,12 +35,6 @@ export default function Home() {
     // recovery
     const [inited, setInited] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        console.log('address', address)
-        console.log('status', status)
-        console.log('connector', connector)
-    }, [address, status, connector])
 
     // chakra hooks
     const { setColorMode } = useColorMode();
@@ -62,9 +54,6 @@ export default function Home() {
                     await signer.deployScw();
                 } catch { }
 
-                const newSignerAddress = await signer.getAddress();
-                setSignerAddress(newSignerAddress);
-
                 const newContractNumber = await contract.value();
                 setContractNumber(parseInt(newContractNumber));
                 signer.recoveryReadyPromise?.then(() => {
@@ -75,18 +64,6 @@ export default function Home() {
 
         func();
     }, [signer, contract]);
-
-    useEffect(() => {
-        if (connector) {
-            console.log('connector changed')
-            connector.on('change', (data: any) => {
-                console.log('onChange', data)
-            });
-            connector.on('disconnect', () => {
-                console.log('onChange', 'disconnect')
-            });
-        }
-    }, [connector])
 
     const handleConnect = async (connector: Connector) => {
         connect({ connector: connector });
@@ -156,8 +133,6 @@ export default function Home() {
         setLoading(false);
     };
 
-    console.log('signer', signer?.scwAddress)
-
     return (
         <Flex
             justifyContent="center"
@@ -195,11 +170,7 @@ export default function Home() {
                     <Box>
                         Your SCW address: {signer.scwAddress}
                         <br />
-                        Your signer _address: {signer._address}
-                        <br />
                         Your zero wallet address: {address}
-                        <br />
-                        Your zero wallet signer address: {signerAddress}
                     </Box>
                     <Flex gap={2}>
                         <Input

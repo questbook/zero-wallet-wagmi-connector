@@ -247,7 +247,11 @@ describe('Test ZeroWalletSigner', () => {
     test('should deploy an SCW', async () => {
         mockedAxios.post.mockImplementation((url: string) => {
             if (url === zeroWalletServerEndpoints.scwDeployer) {
-                return Promise.resolve();
+                return Promise.resolve({
+                    data: {
+                        scwAddress: '0x123'
+                    }
+                });
             }
 
             return Promise.reject(new Error('Not found'));

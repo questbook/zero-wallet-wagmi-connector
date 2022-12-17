@@ -70,7 +70,6 @@ export default class MetamaskRecovery implements RecoveryMechanism {
         );
         const tx = await scwContract.setOwner(newWallet.address);
         await tx.wait();
-        console.log("changed scw's owner to", newWallet.address);
     }
 
     async setupRecovery(wallet: ZeroWalletSigner): Promise<Wallet> {
